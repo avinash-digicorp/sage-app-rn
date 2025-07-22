@@ -61,7 +61,7 @@ export const PatientSummary = () => {
   }
   return (
     <View className="flex-1 items-center justify-around bg-white">
-      <BaseImage type="Image" className="w-full h-full absolute" name="BG" />
+      <BaseImage type="Image" className="h-full w-full absolute" style={{transform:[{scale:1.2}]}} name="BG" />
       <Header
         onPressEdit={onPressEdit}
         title={'Patient Summary'}

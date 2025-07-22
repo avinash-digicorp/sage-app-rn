@@ -24,16 +24,21 @@ const Login = () => {
   const login = () => {
     if (patientId !== conversationId) {
       dispatch(setConversationId(patientId))
-      // dispatch(setUserData(null))
-      // dispatch(setInitialParams(null))
-      // dispatch(setMessages([]))
+      dispatch(setUserData(null))
+      dispatch(setInitialParams(null))
+      dispatch(setMessages([]))
     } else {
     }
     navigation.navigate(routes.WELCOME)
   }
   return (
     <View className="flex-1 items-center bg-white">
-      <BaseImage type="Image" className="w-full h-full absolute" name="BG" />
+      <BaseImage
+        type="Image"
+        className="h-full w-full absolute"
+        style={{transform: [{scale: 1.2}]}}
+        name="BG"
+      />
       <KeyboardAvoidingView
         contentContainerStyle={{width: '100%', alignItems: 'center'}}
         style={{width: '100%'}}
@@ -76,8 +81,8 @@ const Login = () => {
 const styles = StyleSheet.create({
   button: {
     marginTop: 30,
-    height: 90,
-    width: 90,
+    height: 80,
+    width: 80,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 100,

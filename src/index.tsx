@@ -3,12 +3,12 @@ import {LogBox, StatusBar} from 'react-native'
 import {ApplicationNavigator} from 'navigation'
 import {GestureHandlerRootView} from 'react-native-gesture-handler'
 import {Provider} from 'react-redux'
-import {persistor, store} from 'store'
+import {persistor, store} from './store'
 import {PersistGate} from 'redux-persist/integration/react'
-import "./theme/global.css"
+import './theme/global.css'
 
 /**
- *
+ * Sage Medical AI
  * Main app
  * @format
  * @flow

@@ -1,0 +1,273 @@
+diff --git a/node_modules/@react-native-voice/voice/ios/Voice/Voice.m b/node_modules/@react-native-voice/voice/ios/Voice/Voice.m
+index fd9dad8..03dc600 100644
+--- a/node_modules/@react-native-voice/voice/ios/Voice/Voice.m
++++ b/node_modules/@react-native-voice/voice/ios/Voice/Voice.m
+@@ -24,6 +24,8 @@ @interface Voice () <SFSpeechRecognizerDelegate>
+ /** Volume level Metering*/
+ @property float averagePowerForChannel0;
+ @property float averagePowerForChannel1;
++@property (nonatomic, strong) NSString *currentTranscription;
++@property (nonatomic, strong) NSTimer *updateTimer;
+ 
+ @end
+ 
+@@ -122,7 +124,7 @@ -(void) resetAudioSession {
+     self.audioSession = nil;
+ }
+ 
+-- (void) setupAndStartRecognizing:(NSString*)localeStr {
++- (void)setupAndStartRecognizing:(NSString*)localeStr {
+     self.audioSession = [AVAudioSession sharedInstance];
+     self.priorAudioCategory = [self.audioSession category];
+     // Tear down resources before starting speech recognition..
+@@ -154,7 +156,7 @@ - (void) setupAndStartRecognizing:(NSString*)localeStr {
+     self.recognitionRequest.shouldReportPartialResults = YES;
+     
+     if (self.recognitionRequest == nil) {
+-        [self sendResult:@{@"code": @"recognition_init"} :nil :nil :nil];
++        [self sendResult:@{@"code": @"recognition_init", @"message": @"Failed to initialize speech recognition"} :nil :nil :nil];
+         [self teardown];
+         return;
+     }
+@@ -163,119 +165,152 @@ - (void) setupAndStartRecognizing:(NSString*)localeStr {
+         self.audioEngine = [[AVAudioEngine alloc] init];
+     }
+     
+-    @try {
+-    AVAudioInputNode* inputNode = self.audioEngine.inputNode;
+-    if (inputNode == nil) {
+-        [self sendResult:@{@"code": @"input"} :nil :nil :nil];
+-        [self teardown];
+-        return;
+-    }
+-    
+-    [self sendEventWithName:@"onSpeechStart" body:nil];
+-    
++    __block NSMutableString *fullTranscription = [NSMutableString string];
++    __block NSString *lastTranscription = @"";
+     
+-    // A recognition task represents a speech recognition session.
+-    // We keep a reference to the task so that it can be cancelled.
+-    NSString *taskSessionId = self.sessionId;
+-    self.recognitionTask = [self.speechRecognizer recognitionTaskWithRequest:self.recognitionRequest resultHandler:^(SFSpeechRecognitionResult * _Nullable result, NSError * _Nullable error) {
+-        if (![taskSessionId isEqualToString:self.sessionId]) {
+-            // session ID has changed, so ignore any capture results and error
+-            [self teardown];
+-            return;
+-        }
+-        if (error != nil) {
+-            NSString *errorMessage = [NSString stringWithFormat:@"%ld/%@", error.code, [error localizedDescription]];
+-            [self sendResult:@{@"code": @"recognition_fail", @"message": errorMessage} :nil :nil :nil];
++    @try {
++        AVAudioInputNode* inputNode = self.audioEngine.inputNode;
++        if (inputNode == nil) {
++            [self sendResult:@{@"code": @"input", @"message": @"Failed to get audio input node"} :nil :nil :nil];
+             [self teardown];
+             return;
+         }
+         
+-        // No result.
+-        if (result == nil) {
+-            [self sendEventWithName:@"onSpeechEnd" body:nil];
+-            [self teardown];
+-            return;
+-        }
++        [self sendEventWithName:@"onSpeechStart" body:nil];
+         
+-        BOOL isFinal = result.isFinal;
++        NSLog(@"Speech recognition started");
+         
+-        NSMutableArray* transcriptionDics = [NSMutableArray new];
+-        for (SFTranscription* transcription in result.transcriptions) {
+-            [transcriptionDics addObject:transcription.formattedString];
+-        }
++        // A recognition task represents a speech recognition session.
++        // We keep a reference to the task so that it can be cancelled.
++        NSString *taskSessionId = self.sessionId;
+         
+-        [self sendResult :nil :result.bestTranscription.formattedString :transcriptionDics :[NSNumber numberWithBool:isFinal]];
++        self.recognitionTask = [self.speechRecognizer recognitionTaskWithRequest:self.recognitionRequest resultHandler:^(SFSpeechRecognitionResult * _Nullable result, NSError * _Nullable error) {
++            if (![taskSessionId isEqualToString:self.sessionId]) {
++                NSLog(@"Session ID changed, ignoring results");
++                [self teardown];
++                return;
++            }
++            if (error != nil) {
++                NSString *errorMessage = [NSString stringWithFormat:@"%ld/%@", error.code, [error localizedDescription]];
++                NSLog(@"Speech recognition error: %@", errorMessage);
++                [self sendResult:@{@"code": @"recognition_fail", @"message": errorMessage} :nil :nil :nil];
++                [self teardown];
++                return;
++            }
+         
+-        if (isFinal || self.recognitionTask.isCancelled || self.recognitionTask.isFinishing) {
+-            [self sendEventWithName:@"onSpeechEnd" body:nil];
+-            if (!self.continuous) {
++            if (result == nil) {
++                NSLog(@"No speech recognition result");
++                [self sendEventWithName:@"onSpeechEnd" body:nil];
+                 [self teardown];
++                return;
+             }
+-            return;
+-        }
+         
+-    }];
++            NSString *newTranscription = result.bestTranscription.formattedString;
+     
+-    AVAudioFormat* recordingFormat = [inputNode outputFormatForBus:0];
+-    AVAudioMixerNode *mixer = [[AVAudioMixerNode alloc] init];
+-    [self.audioEngine attachNode:mixer];
++            // Find the first non-matching character
++            NSInteger index = 0;
++            while (index < newTranscription.length && index < lastTranscription.length && [newTranscription characterAtIndex:index] == [lastTranscription characterAtIndex:index]) {
++                index++;
++            }
+     
+-    // Start recording and append recording buffer to speech recognizer
+-    @try {
+-        [mixer installTapOnBus:0 bufferSize:1024 format:recordingFormat block:^(AVAudioPCMBuffer * _Nonnull buffer, AVAudioTime * _Nonnull when) {
+-            //Volume Level Metering
+-            UInt32 inNumberFrames = buffer.frameLength;
+-            float LEVEL_LOWPASS_TRIG = 0.5;
+-            if(buffer.format.channelCount>0)
+-            {
+-                Float32* samples = (Float32*)buffer.floatChannelData[0];
+-                Float32 avgValue = 0;
+-
+-                vDSP_maxmgv((Float32*)samples, 1, &avgValue, inNumberFrames);
+-                self.averagePowerForChannel0 = (LEVEL_LOWPASS_TRIG*((avgValue==0)?-100:20.0*log10f(avgValue))) + ((1-LEVEL_LOWPASS_TRIG)*self.averagePowerForChannel0) ;
+-                self.averagePowerForChannel1 = self.averagePowerForChannel0;
++            // Extract the new part from the first divergent character
++            NSString *newPart = [newTranscription substringFromIndex:index];
++            newPart = [newPart stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
++            if (newPart.length > 0) {
++                if (fullTranscription.length > 0) {
++                    [fullTranscription appendString:@" "]; // Append space before new part if not empty
++                }
++                [fullTranscription appendString:newPart];
+             }
+ 
+-            if(buffer.format.channelCount>1)
+-            {
+-                Float32* samples = (Float32*)buffer.floatChannelData[1];
+-                Float32 avgValue = 0;
++            lastTranscription = newTranscription;
+ 
+-                vDSP_maxmgv((Float32*)samples, 1, &avgValue, inNumberFrames);
+-                self.averagePowerForChannel1 = (LEVEL_LOWPASS_TRIG*((avgValue==0)?-100:20.0*log10f(avgValue))) + ((1-LEVEL_LOWPASS_TRIG)*self.averagePowerForChannel1) ;
++            NSLog(@"New transcription: %@", newTranscription);
++            NSLog(@"Full transcription: %@", fullTranscription);
+ 
++            NSMutableArray *transcriptionDics = [NSMutableArray new];
++            for (SFTranscription *transcription in result.transcriptions) {
++                [transcriptionDics addObject:transcription.formattedString];
+             }
+-            // Normalizing the Volume Value on scale of (0-10)
+-            self.averagePowerForChannel1 = [self _normalizedPowerLevelFromDecibels:self.averagePowerForChannel1]*10;
+-            NSNumber *value = [NSNumber numberWithFloat:self.averagePowerForChannel1];
+-            [self sendEventWithName:@"onSpeechVolumeChanged" body:@{@"value": value}];
+-            
+-            // Todo: write recording buffer to file (if user opts in)
+-            if (self.recognitionRequest != nil) {
+-                [self.recognitionRequest appendAudioPCMBuffer:buffer];
++
++            [self sendResult:nil :fullTranscription :transcriptionDics :[NSNumber numberWithBool:result.isFinal]];
++
++            if (result.isFinal) {
++                NSLog(@"Final transcription: %@", fullTranscription);
++                [self sendEventWithName:@"onSpeechEnd" body:nil];
++                if (!self.continuous) {
++                    [self teardown];
++                }
+             }
+         }];
+-    } @catch (NSException *exception) {
+-        NSLog(@"[Error] - %@ %@", exception.name, exception.reason);
+-        [self sendResult:@{@"code": @"start_recording", @"message": [exception reason]} :nil :nil :nil];
+-        [self teardown];
+-        return;
+-    } @finally {}
++        AVAudioFormat* recordingFormat = [inputNode outputFormatForBus:0];
++        AVAudioMixerNode *mixer = [[AVAudioMixerNode alloc] init];
++        [self.audioEngine attachNode:mixer];
++        
++        // Start recording and append recording buffer to speech recognizer
++        @try {
++            [mixer installTapOnBus:0 bufferSize:1024 format:recordingFormat block:^(AVAudioPCMBuffer * _Nonnull buffer, AVAudioTime * _Nonnull when) {
++                //Volume Level Metering
++                UInt32 inNumberFrames = buffer.frameLength;
++                float LEVEL_LOWPASS_TRIG = 0.5;
++                if(buffer.format.channelCount>0)
++                {
++                    Float32* samples = (Float32*)buffer.floatChannelData[0];
++                    Float32 avgValue = 0;
++
++                    vDSP_maxmgv((Float32*)samples, 1, &avgValue, inNumberFrames);
++                    self.averagePowerForChannel0 = (LEVEL_LOWPASS_TRIG*((avgValue==0)?-100:20.0*log10f(avgValue))) + ((1-LEVEL_LOWPASS_TRIG)*self.averagePowerForChannel0) ;
++                    self.averagePowerForChannel1 = self.averagePowerForChannel0;
++                }
++
++                if(buffer.format.channelCount>1)
++                {
++                    Float32* samples = (Float32*)buffer.floatChannelData[1];
++                    Float32 avgValue = 0;
++
++                    vDSP_maxmgv((Float32*)samples, 1, &avgValue, inNumberFrames);
++                    self.averagePowerForChannel1 = (LEVEL_LOWPASS_TRIG*((avgValue==0)?-100:20.0*log10f(avgValue))) + ((1-LEVEL_LOWPASS_TRIG)*self.averagePowerForChannel1) ;
++
++                }
++                // Normalizing the Volume Value on scale of (0-10)
++                self.averagePowerForChannel1 = [self _normalizedPowerLevelFromDecibels:self.averagePowerForChannel1]*10;
++                NSNumber *value = [NSNumber numberWithFloat:self.averagePowerForChannel1];
++                [self sendEventWithName:@"onSpeechVolumeChanged" body:@{@"value": value}];
++                
++                // Todo: write recording buffer to file (if user opts in)
++                if (self.recognitionRequest != nil) {
++                    [self.recognitionRequest appendAudioPCMBuffer:buffer];
++                }
++            }];
++        } @catch (NSException *exception) {
++            NSLog(@"[Error] - %@ %@", exception.name, exception.reason);
++            [self sendResult:@{@"code": @"start_recording", @"message": [exception reason]} :nil :nil :nil];
++            [self teardown];
++            return;
++        } @finally {}
++        
++        [self.audioEngine connect:inputNode to:mixer format:recordingFormat];
++        [self.audioEngine prepare];
++        NSError* audioSessionError = nil;
++        [self.audioEngine startAndReturnError:&audioSessionError];
++        if (audioSessionError != nil) {
++            [self sendResult:@{@"code": @"audio", @"message": [audioSessionError localizedDescription]} :nil :nil :nil];
++            [self teardown];
++            return;
++        }
+     
+-    [self.audioEngine connect:inputNode to:mixer format:recordingFormat];
+-    [self.audioEngine prepare];
+-    NSError* audioSessionError = nil;
+-    [self.audioEngine startAndReturnError:&audioSessionError];
+-    if (audioSessionError != nil) {
+-        [self sendResult:@{@"code": @"audio", @"message": [audioSessionError localizedDescription]} :nil :nil :nil];
+-        [self teardown];
+-        return;
+-    }
++        NSLog(@"Audio engine started successfully");
+     }
+     @catch (NSException *exception) {
+-    [self sendResult:@{@"code": @"start_recording", @"message": [exception reason]} :nil :nil :nil];
+-    return;
+-  }
++        NSLog(@"[Error] in setupAndStartRecognizing: %@ %@", exception.name, exception.reason);
++        [self sendResult:@{@"code": @"start_recording", @"message": [exception reason]} :nil :nil :nil];
++        return;
++    }
++}
++
++// New method to send the current transcription
++- (void)sendCurrentTranscription {
++    [self sendResult:nil :self.currentTranscription :@[self.currentTranscription] :@NO];
+ }
+ 
+ - (CGFloat)_normalizedPowerLevelFromDecibels:(CGFloat)decibels {

@@ -29,7 +29,7 @@ export const Header = (props: IProps) => {
           buttonViewProps={{onPress: goBack}}
         />
       )}
-      <BaseButton scale={1} style={{width: 'auto'}} title={title} />
+      <BaseButton scale={1} style={{width: 'auto',}} buttonStyle={{height:30}} title={title} titleStyle={{fontSize: 14, paddingHorizontal:0}}/>
       {showLines && <View style={styles.line} />}
       {showEdit && !showEdit && <View className="w-10" />}
       {showEdit && (

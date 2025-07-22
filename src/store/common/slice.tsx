@@ -14,7 +14,7 @@ export const commonSlice = createSlice({
   initialState,
   reducers: {
     setConversationId: (state, action) => {
-      // state.conversationId = action.payload
+      state.conversationId = action.payload
     },
     setCategories: (state, action) => {
       state.categories = action.payload

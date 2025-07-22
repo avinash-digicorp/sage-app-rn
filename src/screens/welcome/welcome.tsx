@@ -1,5 +1,5 @@
 import {View, Text as RNText} from 'react-native'
-import {BaseImage, ButtonView, Text} from 'components'
+import {BaseImage, ButtonView, Header, Text} from 'components'
 import {useNavigation} from '@react-navigation/native'
 import {routes} from 'navigation'
 import {NurseView} from 'components/common'
@@ -70,7 +70,7 @@ const Welcome = () => {
     const parts = text.split(/(\[.*?\])/)
 
     return (
-      <RNText className="text-center text-gray-700 font-bold text-2xl">
+      <RNText className="text-center text-gray-700 font-bold text-xl">
         {parts.map((part, index) => {
           if (part.startsWith('[') && part.endsWith(']')) {
             // Remove brackets and make text blue
@@ -87,17 +87,18 @@ const Welcome = () => {
     )
   }
   return (
-    <View className="flex-1 items-center justify-around bg-white">
-      <BaseImage type="Image" className="w-full h-full absolute" name="BG" />
+    <View className="flex-1 items-center bg-white">
+      <BaseImage type="Image" className="h-full w-full absolute" style={{transform:[{scale:1.2}]}} name="BG" />
+      <Header title="Meet Sage! Your Personal AI MA"  />
       <NurseView />
-      <View className="w-full max-h-80 items-center py-4 px-8">
+      <View className="w-full max-h-80 items-center py-8 px-8">
         {renderMessageWithBlueText(message)}
       </View>
-      <ButtonView onPress={start} className="mt-4 rounded-full overflow-hidden">
-        <BaseImage name="wave_animated" style={{width: 100, height: 100}} />
+      <ButtonView onPress={start} className="rounded-full mt-12 overflow-hidden">
+        <BaseImage name="wave_animated" style={{width: 80, height: 80}} />
         <Text
           text="Start"
-          className="absolute text-white self-center font-bold text-2xl top-10"
+          className="absolute text-white self-center font-bold text-xl top-8"
         />
       </ButtonView>
     </View>
