@@ -72,7 +72,8 @@ export const PatientSummary = () => {
   const onPressEdit = () => {
     navigate.navigate(routes.PATIENT_DATA_EDIT, {
       title: currentCategory?.category ?? 'Patient Demographic',
-      conversation
+      conversation,
+      category
     })
   }
   const showEdit =

@@ -14,6 +14,7 @@ import {Header} from 'components/header'
 import {useRoute} from '@react-navigation/native'
 import colors from 'theme'
 import {hasObjectLength} from 'utils/condition'
+import {Request} from 'utils/request'
 
 export const PatientDataEdit = () => {
   const params = useRoute().params
@@ -28,7 +29,22 @@ export const PatientDataEdit = () => {
       [pk_question_id]: value
     }))
   }
+  const fetchInitialData = () => {
+    const onSuccess = res => {
+      console.log('res.data?.conversation', res)
+
+      // setConversation([...res.data?.conversation])
+    }
+    const categoryIds = [category]
+    const data = {
+      conversation_id: conversationId,
+      is_edit_view: true,
+      categories: [params?.category]
+    }
+    Request('conversation', 'POST', data, onSuccess, () => {})
+  }
   useEffect(() => {
+    fetchInitialData()
     const initialData = conversation ?? {}
     setData(initialData)
 
@@ -47,10 +63,24 @@ export const PatientDataEdit = () => {
 
     const submitParams = {
       conversation_id: conversationId,
-      data: data
+      preview_data: [
+        {
+          pk_question_id: 3,
+          edit_disabled: 0,
+          pk_user_conversation_id: 10143,
+          question_title: 'Last Name',
+          type: 'textfield',
+          extracted_answer: 'Smith',
+          extracted_data: 'Smith',
+          sub_category: null,
+          category: 'Patient Demographic',
+          question_validation: '',
+          is_required: 0
+        }
+      ]
     }
 
-    // Request('submit-patient-data', 'POST', submitParams, onSuccess, onError)
+    Request('editConversation', 'POST', submitParams, onSuccess, onError)
   }
 
   const props = {
@@ -62,7 +92,12 @@ export const PatientDataEdit = () => {
   }
   return (
     <View className="flex-1 items-center justify-around bg-white">
-      <BaseImage type="Image" className="h-full w-full absolute" style={{transform:[{scale:1.2}]}} name="BG" />
+      <BaseImage
+        type="Image"
+        className="h-full w-full absolute"
+        style={{transform: [{scale: 1.2}]}}
+        name="BG"
+      />
       <Header
         showLines={false}
         showBack
