@@ -20,6 +20,9 @@ export const PatientSummary = () => {
   const dispatch = useDispatch()
   const navigate = useNavigation()
   const [category, setCategory] = useState(0)
+  const [xrayImages, setXrayImages] = useState(null)
+  const [assetPath, setAssetPath] = useState('')
+  const [insuranceData, setInsuranceData] = useState(null)
   const [conversation, setConversation] = useState([])
   const fetchCategories = () => {
     const onSuccess = res => {
@@ -43,6 +46,15 @@ export const PatientSummary = () => {
     if (!id) return
     const onSuccess = res => {
       setConversation([...res.data?.conversation])
+      if (res.data?.xrayImages) {
+        setXrayImages(res.data?.xrayImages)
+      }
+      if (res.data?.insuranceData) {
+        setInsuranceData(res.data?.insuranceData)
+      }
+      if (res.data?.S3_SAGE_URL) {
+        setAssetPath(res.data?.S3_SAGE_URL)
+      }
     }
     const params = {conversation_id: conversationId, categories: [id]}
     Request('conversation', 'POST', params, onSuccess, () => {})
@@ -59,6 +71,9 @@ export const PatientSummary = () => {
       conversation
     })
   }
+  const showEdit =
+    currentCategory?.category !== 'Insurance Detail' &&
+    currentCategory?.category !== 'Radiology'
   return (
     <View className="flex-1 items-center justify-around bg-white">
       <BaseImage
@@ -71,13 +86,21 @@ export const PatientSummary = () => {
         onPressEdit={onPressEdit}
         title={'Patient Summary'}
         showLines={false}
-        showEdit
+        showEdit={showEdit}
       />
       <Categories {...props} />
       <ScrollView className="mt-20 w-full">
         <ConversationDataView {...props} />
-        <InsuranceView {...props} />
-        <RadiologyView {...props} />
+        <RadiologyView
+          {...props}
+          assetPath={assetPath}
+          xrayImages={xrayImages}
+        />
+        <InsuranceView
+          {...props}
+          assetPath={assetPath}
+          insuranceData={insuranceData}
+        />
       </ScrollView>
     </View>
   )

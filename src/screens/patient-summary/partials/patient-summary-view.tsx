@@ -1,9 +1,17 @@
-import {View, Text, StyleSheet} from 'react-native'
+import {Text} from 'components'
+import {View, StyleSheet} from 'react-native'
+import {useSelector} from 'react-redux'
+import {RootState} from 'store'
 import colors from 'theme'
+import {hasLength} from 'utils/condition'
 
-export default ({conversation = []}) => {
-  if (!conversation.length) return
-  const uniqueConversation = conversation.filter((item, index, array) => {
+export default ({conversation = [], category}) => {
+  const {categories} = useSelector((state: RootState) => state.common)
+  const currentCategory = categories?.find(cat => cat.id === category)
+  if (currentCategory?.category === 'Insurance Detail') return null
+  if (currentCategory?.category === 'Radiology') return null
+
+  const uniqueConversation = conversation?.filter?.((item, index, array) => {
     const lastIndex = array
       .map(obj => obj.question_title)
       .lastIndexOf(item.question_title)
@@ -13,6 +21,13 @@ export default ({conversation = []}) => {
     <View
       style={styles.container}
       className="flex-1 p-4 bg-white rounded-md mt-2 mb-12 mx-3">
+      {!hasLength(uniqueConversation) && (
+        <Text
+          style={{textAlign: 'center'}}
+          className="text-gray-700 text-xl text-center w-full py-40">
+          No conversation data available
+        </Text>
+      )}
       {uniqueConversation.map((item, index) => {
         return <ConversationItem key={index} item={item} />
       })}
@@ -24,13 +39,9 @@ export const ConversationItem = ({item}) => {
   if (item?.sub_category_data) {
     return (
       <View style={styles.categoryContainer}>
-        <Text style={styles.categoryTitle}>{item.sub_category}</Text>
         {item.sub_category_data.map((subItem, subIndex) => (
           <View key={subIndex} style={styles.subItemContainer}>
-            <Text style={styles.subItemTitle}>{subItem.question_title}</Text>
-            <Text style={styles.subItemAnswer}>
-              - {subItem.extracted_answer}
-            </Text>
+            <ConversationItem item={subItem} />
           </View>
         ))}
       </View>
@@ -54,22 +65,10 @@ const styles = StyleSheet.create({
     elevation: 5,
     borderRadius: 10
   },
-  categoryContainer: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderColor: '#ccc'
-  },
-  categoryTitle: {
-    fontWeight: 'bold'
-  },
+  categoryContainer: {},
   subItemContainer: {
-    marginLeft: 15
-  },
-  subItemTitle: {
-    fontWeight: '600'
-  },
-  subItemAnswer: {
-    color: '#333'
+    marginTop: 5,
+    width: '100%'
   },
   itemContainer: {
     paddingVertical: 5,

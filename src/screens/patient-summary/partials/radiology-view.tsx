@@ -7,7 +7,7 @@ import {
   StyleSheet,
   FlatList
 } from 'react-native'
-import {useState} from 'react'
+import {useEffect, useState} from 'react'
 import {
   launchImageLibrary,
   launchCamera,
@@ -16,6 +16,10 @@ import {
 } from 'react-native-image-picker'
 import {useSelector} from 'react-redux'
 import {RootState} from 'store'
+import {BaseButton} from 'components'
+import {BASE_URL} from 'config'
+import {hasLength} from 'utils/condition'
+import {Request} from 'utils/request'
 
 interface RadioImage {
   id: string
@@ -24,13 +28,30 @@ interface RadioImage {
 }
 
 const RadiologyView = (props: any) => {
-  const {categories} = useSelector((state: RootState) => state.common)
-  const {category, conversationId} = props
+  const {categories, conversationId} = useSelector(
+    (state: RootState) => state.common
+  )
+  const {category, assetPath} = props
   const [images, setImages] = useState<RadioImage[]>([])
+  const [updatingImages, setUpdatingImages] = useState(false)
+  const [xrays, setXrays] = useState<string[]>(props.xrayImages?.images || [])
   const [isSubmitting, setIsSubmitting] = useState(false)
+  useEffect(() => {
+    setXrays(props?.xrayImages?.images)
+    return () => {}
+  }, [props.xrayImages?.images])
 
   const currentCategory = categories?.find(cat => cat.id === category)
   if (currentCategory?.category !== 'Radiology') return null
+  const mainList = [
+    ...images?.map(img => ({...img, type: 'local'})),
+    ...xrays?.map((item, index) => ({
+      uri: `${assetPath}/${item}`,
+      type: 'image',
+      id: item
+    })),
+    {type: 'add-button'}
+  ]
 
   const showImagePicker = () => {
     if (images.length >= 10) {
@@ -39,18 +60,9 @@ const RadiologyView = (props: any) => {
     }
 
     Alert.alert('Add Radiology Image', 'Choose how you want to add the image', [
-      {
-        text: 'Camera',
-        onPress: () => openCamera()
-      },
-      {
-        text: 'Gallery',
-        onPress: () => openGallery()
-      },
-      {
-        text: 'Cancel',
-        style: 'cancel'
-      }
+      {text: 'Camera', onPress: openCamera},
+      {text: 'Gallery', onPress: openGallery},
+      {text: 'Cancel', style: 'cancel'}
     ])
   }
 
@@ -63,17 +75,12 @@ const RadiologyView = (props: any) => {
     }
 
     launchCamera(options, (response: ImagePickerResponse) => {
-      if (response.didCancel) {
-        console.log('User cancelled camera picker')
-        return
-      }
+      if (response.didCancel) return
 
       if (response.errorMessage) {
-        console.error('Camera Error: ', response.errorMessage)
         Alert.alert('Camera Error', response.errorMessage)
         return
       }
-      console.log('responshhhe', response)
 
       if (response.assets && response.assets[0]) {
         const asset = response.assets[0]
@@ -96,15 +103,9 @@ const RadiologyView = (props: any) => {
     }
 
     launchImageLibrary(options, (response: ImagePickerResponse) => {
-      console.log('responshhhe', response)
-
-      if (response.didCancel) {
-        console.log('User cancelled gallery picker')
-        return
-      }
+      if (response.didCancel) return
 
       if (response.errorMessage) {
-        console.error('Gallery Error: ', response.errorMessage)
         Alert.alert('Gallery Error', response.errorMessage)
         return
       }
@@ -115,7 +116,6 @@ const RadiologyView = (props: any) => {
           id: Date.now().toString(),
           ...asset,
           path: asset.uri,
-
           name: asset.fileName || `radiology_${Date.now()}.jpg`
         }
         setImages(prev => [...prev, newImage])
@@ -123,20 +123,12 @@ const RadiologyView = (props: any) => {
     })
   }
 
-  const removeImage = (id: string) => {
-    Alert.alert('Remove Image', 'Are you sure you want to remove this image?', [
-      {
-        text: 'Cancel',
-        style: 'cancel'
-      },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: () => {
-          setImages(prev => prev.filter(img => img.id !== id))
-        }
-      }
-    ])
+  const removeImage = item => {
+    if (item.type === 'image') {
+      setXrays(prev => prev.filter(img => img !== item.id))
+    } else {
+      setImages(prev => prev.filter(img => img.id !== item.id))
+    }
   }
 
   const createFormData = (images, body = {}) => {
@@ -158,25 +150,31 @@ const RadiologyView = (props: any) => {
   }
 
   const submitImages = async () => {
-    if (images.length === 0) {
-      Alert.alert('No Images', 'Please add at least one Radiology image')
-      return
-    }
-
-    console.log('ddd')
-
     try {
-      await fetch(`${BASE_URL}upload-xray`, {
-        method: 'POST',
-        body: createFormData(images, {conversation_id: conversationId}),
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Accept: 'application/json'
-        }
-      })
-        .then(response => response.json())
-        .then(res => console.log(res))
-        .catch(err => console.error(err))
+      if (props.xrayImages?.images !== xrays) {
+        setUpdatingImages(true)
+        Request(
+          `conversation/${conversationId}/images`,
+          'POST',
+          {images: xrays},
+          () => setUpdatingImages(false),
+          () => setUpdatingImages(false)
+        )
+      }
+      if (hasLength(images)) {
+        setIsSubmitting(true)
+        await fetch(`${BASE_URL}upload-xray`, {
+          method: 'POST',
+          body: createFormData(images, {conversation_id: conversationId}),
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Accept: 'application/json'
+          }
+        })
+          .then(response => response.json())
+          .then(res => setIsSubmitting(false))
+          .catch(err => setIsSubmitting(false))
+      }
     } catch (error) {
       console.error('❌ Upload failed:', error)
       throw error
@@ -190,7 +188,7 @@ const RadiologyView = (props: any) => {
       <Image source={{uri: item.uri}} style={styles.imagePreview} />
       <TouchableOpacity
         style={styles.removeButton}
-        onPress={() => removeImage(item.id)}>
+        onPress={() => removeImage(item)}>
         <Text style={styles.removeButtonText}>✕</Text>
       </TouchableOpacity>
     </View>
@@ -218,9 +216,9 @@ const RadiologyView = (props: any) => {
 
       <View style={styles.imageGrid}>
         <FlatList
-          data={[...images, {id: 'add-button'}]}
+          data={mainList}
           renderItem={({item}) => {
-            if (item.id === 'add-button') {
+            if (item?.type === 'add-button') {
               return images.length < 10 ? renderAddButton() : null
             }
             return renderImageItem({item: item as RadioImage})
@@ -231,19 +229,11 @@ const RadiologyView = (props: any) => {
           showsVerticalScrollIndicator={false}
         />
       </View>
-
-      <TouchableOpacity
-        style={[styles.submitButton, !canSubmit && styles.submitButtonDisabled]}
+      <BaseButton
+        title="Save"
+        loading={isSubmitting || updatingImages}
         onPress={submitImages}
-        disabled={!canSubmit}>
-        <Text
-          style={[
-            styles.submitButtonText,
-            !canSubmit && styles.submitButtonTextDisabled
-          ]}>
-          {isSubmitting ? 'Saving...' : 'Save'}
-        </Text>
-      </TouchableOpacity>
+      />
     </View>
   )
 }
@@ -312,13 +302,18 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 0, 0, 0.8)',
+    backgroundColor: 'white',
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5
   },
   removeButtonText: {
-    color: '#fff',
-    fontSize: 14,
+    color: '#000',
+    fontSize: 12,
     fontWeight: 'bold'
   },
   addButton: {

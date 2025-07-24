@@ -120,10 +120,10 @@ const styles = StyleSheet.create({
   inputField: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 46,
+    height: 58,
     borderWidth: 1,
     borderColor: '#ccc',
-    borderRadius: 5,
+    borderRadius: 10,
     paddingHorizontal: 12,
     justifyContent: 'space-between',
     backgroundColor: '#fff'

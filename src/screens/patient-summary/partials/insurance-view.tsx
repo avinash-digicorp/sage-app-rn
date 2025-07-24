@@ -5,8 +5,6 @@ import {
   Image,
   Alert,
   StyleSheet,
-  ScrollView,
-  TextInput,
   Platform,
   Modal
 } from 'react-native'
@@ -21,6 +19,9 @@ import {
 import {Request} from '../../../../apiRequest'
 import {useSelector} from 'react-redux'
 import {RootState} from 'store'
+import {BaseButton, BaseInput} from 'components'
+import BaseDatePicker from 'components/base/base-date-picker/base-date-picker'
+import colors from 'theme'
 
 const InsuranceView = (props: any) => {
   const {categories} = useSelector((state: RootState) => state.common)
@@ -193,142 +194,92 @@ const InsuranceView = (props: any) => {
   }
 
   const canSubmit =
-    frontImage &&
-    backImage &&
-    insurancePlanName.trim() &&
-    memberId.trim() &&
-    groupNumber.trim() &&
-    startDate &&
-    endDate &&
-    !isSubmitting
+    frontImage && backImage && insurancePlanName.trim() && memberId.trim()
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Insurance Detail</Text>
-      <Text style={styles.subtitle}>
-        Please capture or select front and back images of your insurance card
-      </Text>
+    <View
+      style={styles.container}
+      className="flex-1 p-4 bg-white rounded-md mt-2 mb-12 mx-3">
+      <BaseInput
+        label="Insurance Plan Name"
+        value={insurancePlanName}
+        onChangeText={setInsurancePlanName}
+      />
+      <BaseInput
+        label="Member ID"
+        value={memberId}
+        onChangeText={setMemberId}
+      />
+      <BaseInput
+        label="Group Number (Optional)"
+        value={groupNumber}
+        onChangeText={setGroupNumber}
+      />
+      <BaseDatePicker
+        label="Start Date (Optional)"
+        value={startDate}
+        setValue={setStartDate}
+      />
 
-      {/* Front Image Picker */}
-      <View style={styles.imageSection}>
-        <Text style={styles.sectionTitle}>Front Side</Text>
+      <BaseDatePicker
+        label="End Date (Optional)"
+        value={endDate}
+        setValue={setEndDate}
+      />
+
+      <Text style={styles.label}>{'Insurance Card'}</Text>
+      <View style={styles.imagePickersContainer}>
         <TouchableOpacity
-          style={styles.imagePicker}
+          style={styles.squareImagePicker}
           onPress={() => showImagePicker('front')}>
           {frontImage ? (
-            <Image source={{uri: frontImage}} style={styles.selectedImage} />
+            <>
+              <Image
+                source={{uri: frontImage}}
+                style={styles.squareSelectedImage}
+              />
+              <TouchableOpacity
+                style={styles.removeButton}
+                onPress={() => setFrontImage(null)}>
+                <Text style={styles.removeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </>
           ) : (
-            <View style={styles.placeholderContainer}>
-              <Text style={styles.placeholderText}>Tap to add front image</Text>
-              <Text style={styles.placeholderSubtext}>
-                📷 Camera or Gallery
-              </Text>
+            <View style={styles.squarePlaceholderContainer}>
+              <Text style={styles.squarePlaceholderText}>Front</Text>
             </View>
           )}
         </TouchableOpacity>
-      </View>
 
-      {/* Back Image Picker */}
-      <View style={styles.imageSection}>
-        <Text style={styles.sectionTitle}>Back Side</Text>
         <TouchableOpacity
-          style={styles.imagePicker}
+          style={styles.squareImagePicker}
           onPress={() => showImagePicker('back')}>
           {backImage ? (
-            <Image source={{uri: backImage}} style={styles.selectedImage} />
+            <>
+              <Image
+                source={{uri: backImage}}
+                style={styles.squareSelectedImage}
+              />
+              <TouchableOpacity
+                style={styles.removeButton}
+                onPress={() => setBackImage(null)}>
+                <Text style={styles.removeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </>
           ) : (
-            <View style={styles.placeholderContainer}>
-              <Text style={styles.placeholderText}>Tap to add back image</Text>
-              <Text style={styles.placeholderSubtext}>
-                📷 Camera or Gallery
-              </Text>
+            <View style={styles.squarePlaceholderContainer}>
+              <Text style={styles.squarePlaceholderText}>Back</Text>
             </View>
           )}
         </TouchableOpacity>
       </View>
 
-      {/* Form Fields */}
-      <View style={styles.formSection}>
-        <Text style={styles.sectionTitle}>Insurance Information</Text>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Insurance Plan Name *</Text>
-          <TextInput
-            style={styles.textInput}
-            value={insurancePlanName}
-            onChangeText={setInsurancePlanName}
-            placeholder="Enter insurance plan name"
-            placeholderTextColor="#999"
-          />
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Member ID *</Text>
-          <TextInput
-            style={styles.textInput}
-            value={memberId}
-            onChangeText={setMemberId}
-            placeholder="Enter member ID"
-            placeholderTextColor="#999"
-          />
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Group Number *</Text>
-          <TextInput
-            style={styles.textInput}
-            value={groupNumber}
-            onChangeText={setGroupNumber}
-            placeholder="Enter group number"
-            placeholderTextColor="#999"
-          />
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Start Date *</Text>
-          <TouchableOpacity
-            style={styles.datePickerButton}
-            onPress={() => setShowStartDatePicker(true)}>
-            <Text
-              style={[
-                styles.datePickerText,
-                !startDate && styles.placeholderText
-              ]}>
-              {startDate ? startDate.toLocaleDateString() : 'Select start date'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>End Date *</Text>
-          <TouchableOpacity
-            style={styles.datePickerButton}
-            onPress={() => setShowEndDatePicker(true)}>
-            <Text
-              style={[
-                styles.datePickerText,
-                !endDate && styles.placeholderText
-              ]}>
-              {endDate ? endDate.toLocaleDateString() : 'Select end date'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Submit Button */}
-      <TouchableOpacity
-        style={[styles.submitButton, !canSubmit && styles.submitButtonDisabled]}
+      <BaseButton
+        title="Save"
         onPress={submitImages}
-        disabled={!canSubmit}>
-        <Text
-          style={[
-            styles.submitButtonText,
-            !canSubmit && styles.submitButtonTextDisabled
-          ]}>
-          {isSubmitting ? 'Saving...' : 'Save'}
-        </Text>
-      </TouchableOpacity>
-
+        disabled={!canSubmit}
+        loading={isSubmitting}
+      />
       {/* Date Pickers */}
       {Platform.OS === 'ios' ? (
         <>
@@ -355,7 +306,7 @@ const InsuranceView = (props: any) => {
                   value={startDate || new Date()}
                   mode="date"
                   display="spinner"
-                  onChange={(event: any, selectedDate?: Date) => {
+                  onChange={(_event: any, selectedDate?: Date) => {
                     if (selectedDate) {
                       setStartDate(selectedDate)
                     }
@@ -386,7 +337,7 @@ const InsuranceView = (props: any) => {
                   value={endDate || new Date()}
                   mode="date"
                   display="spinner"
-                  onChange={(event: any, selectedDate?: Date) => {
+                  onChange={(_event: any, selectedDate?: Date) => {
                     if (selectedDate) {
                       setEndDate(selectedDate)
                     }
@@ -404,7 +355,7 @@ const InsuranceView = (props: any) => {
               value={startDate || new Date()}
               mode="date"
               display="default"
-              onChange={(event: any, selectedDate?: Date) => {
+              onChange={(_event: any, selectedDate?: Date) => {
                 setShowStartDatePicker(false)
                 if (selectedDate) {
                   setStartDate(selectedDate)
@@ -418,7 +369,7 @@ const InsuranceView = (props: any) => {
               value={endDate || new Date()}
               mode="date"
               display="default"
-              onChange={(event: any, selectedDate?: Date) => {
+              onChange={(_event: any, selectedDate?: Date) => {
                 setShowEndDatePicker(false)
                 if (selectedDate) {
                   setEndDate(selectedDate)
@@ -428,115 +379,72 @@ const InsuranceView = (props: any) => {
           )}
         </>
       )}
-    </ScrollView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
+  label: {fontSize: 16, marginBottom: 8, fontWeight: '500', color: '#333'},
   container: {
-    padding: 20
+    width: '95%',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    borderRadius: 10
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 10,
-    color: '#333'
-  },
-  subtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 30,
-    color: '#666',
-    lineHeight: 22
-  },
-  imageSection: {
+  imagePickersContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: 25
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 10,
-    color: '#333'
-  },
-  imagePicker: {
-    borderWidth: 2,
-    borderColor: '#ddd',
+  squareImagePicker: {
+    aspectRatio: 1,
+    width: 176,
+    height: 176,
     borderRadius: 12,
-    borderStyle: 'dashed',
-    overflow: 'hidden'
+    overflow: 'hidden',
+    position: 'relative'
   },
-  selectedImage: {
+  squareSelectedImage: {
     width: '100%',
-    height: 200,
+    height: '100%',
     resizeMode: 'cover'
   },
-  placeholderContainer: {
-    height: 200,
+  squarePlaceholderContainer: {
+    flex: 1,
+    backgroundColor: colors.gray3,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20
+    borderRadius: 12
   },
-  placeholderText: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 5,
-    textAlign: 'center'
-  },
-  placeholderSubtext: {
-    fontSize: 14,
-    color: '#999',
-    textAlign: 'center'
-  },
-  submitButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 30
-  },
-  submitButtonDisabled: {},
-  submitButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600'
-  },
-  submitButtonTextDisabled: {
-    color: '#999'
-  },
-  formSection: {
-    marginBottom: 25
-  },
-  inputGroup: {
-    marginBottom: 20
-  },
-  inputLabel: {
+  squarePlaceholderText: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 8,
-    color: '#333'
+    color: '#666',
+    textAlign: 'center'
   },
-  textInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#333'
+  removeButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 4
   },
-  datePickerButton: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 12
-  },
-  datePickerText: {
-    fontSize: 16,
-    color: '#333'
+  removeButtonText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#666'
   },
   modalContainer: {
     flex: 1,

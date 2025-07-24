@@ -89,12 +89,7 @@ export const BaseInput = (props: Props) => {
               ]
             }
           ]}>
-          <Text
-            style={[
-              styles.label,
-              { color
-              }
-            ]}>
+          <Text style={[styles.label, {color}]}>
             {label}
             {errorText ? '*' : ''}
           </Text>
@@ -110,7 +105,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 10,
     color: colors.gray8,
     fontFamily: fonts.medium,
     fontSize: 16
