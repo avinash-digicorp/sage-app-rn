@@ -77,7 +77,7 @@ const Login = () => {
       dispatch(setMessages([]))
     } else {
     }
-    navigation.navigate(routes.WELCOME)
+    navigation.navigate(routes.PATIENT_SUMMARY)
   }
   return (
     <View className="flex-1 items-center bg-white">
