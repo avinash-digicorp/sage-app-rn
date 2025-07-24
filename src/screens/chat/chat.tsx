@@ -92,6 +92,10 @@ const Chat = () => {
       if (isAsking) {
         setIsAsking(false)
       }
+      if (initialParams?.next_question_id === 0) {
+        resetNavigation(routes.PATIENT_SUMMARY)
+        return
+      }
       speechToText(3)
     })
     return () => {

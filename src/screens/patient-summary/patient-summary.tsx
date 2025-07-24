@@ -42,7 +42,7 @@ export const PatientSummary = () => {
   const fetchConversation = (id: any) => {
     if (!id) return
     const onSuccess = res => {
-      setConversation([...res.data])
+      setConversation([...res.data?.conversation])
     }
     const params = {conversation_id: conversationId, categories: [id]}
     Request('conversation', 'POST', params, onSuccess, () => {})
@@ -61,7 +61,12 @@ export const PatientSummary = () => {
   }
   return (
     <View className="flex-1 items-center justify-around bg-white">
-      <BaseImage type="Image" className="h-full w-full absolute" style={{transform:[{scale:1.2}]}} name="BG" />
+      <BaseImage
+        type="Image"
+        className="h-full w-full absolute"
+        style={{transform: [{scale: 1.2}]}}
+        name="BG"
+      />
       <Header
         onPressEdit={onPressEdit}
         title={'Patient Summary'}
@@ -69,7 +74,7 @@ export const PatientSummary = () => {
         showEdit
       />
       <Categories {...props} />
-      <ScrollView className="mt-14 w-full">
+      <ScrollView className="mt-20 w-full">
         <ConversationDataView {...props} />
         <InsuranceView {...props} />
         <RadiologyView {...props} />

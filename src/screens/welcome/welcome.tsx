@@ -1,6 +1,6 @@
 import {View, Text as RNText} from 'react-native'
 import {BaseImage, ButtonView, Header, Text} from 'components'
-import {useNavigation} from '@react-navigation/native'
+import {useNavigation, useRoute} from '@react-navigation/native'
 import {routes} from 'navigation'
 import {NurseView} from 'components/common'
 import Tts from 'react-native-tts'
@@ -18,7 +18,7 @@ const Welcome = () => {
   const {conversationId} = useSelector((state: RootState) => state.common)
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [message, setMessage] = useState<string>('')
-
+  const route = useRoute()
   useEffect(() => {
     Tts.setDefaultLanguage('en-US')
     Tts.setDefaultPitch(1.0)
@@ -32,6 +32,11 @@ const Welcome = () => {
     }
   }, [])
   useEffect(() => {
+    if (route.params?.message) {
+      Tts.speak(route.params.message)
+      setMessage(route.params.message)
+      return
+    }
     fetchQuestionList()
     return () => {}
   }, [])
@@ -88,13 +93,20 @@ const Welcome = () => {
   }
   return (
     <View className="flex-1 items-center bg-white">
-      <BaseImage type="Image" className="h-full w-full absolute" style={{transform:[{scale:1.2}]}} name="BG" />
-      <Header title="Meet Sage! Your Personal AI MA"  />
+      <BaseImage
+        type="Image"
+        className="h-full w-full absolute"
+        style={{transform: [{scale: 1.2}]}}
+        name="BG"
+      />
+      <Header title="Meet Sage! Your Personal AI MA" />
       <NurseView />
       <View className="w-full max-h-80 items-center py-8 px-8">
         {renderMessageWithBlueText(message)}
       </View>
-      <ButtonView onPress={start} className="rounded-full mt-12 overflow-hidden">
+      <ButtonView
+        onPress={start}
+        className="rounded-full mt-12 overflow-hidden">
         <BaseImage name="wave_animated" style={{width: 80, height: 80}} />
         <Text
           text="Start"
