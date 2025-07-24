@@ -8,7 +8,7 @@ import {
   Platform,
   Modal
 } from 'react-native'
-import {useState} from 'react'
+import {useEffect, useState} from 'react'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import {
   launchImageLibrary,
@@ -22,17 +22,18 @@ import {RootState} from 'store'
 import {BaseButton, BaseInput} from 'components'
 import BaseDatePicker from 'components/base/base-date-picker/base-date-picker'
 import colors from 'theme'
+import {hasObjectLength, hasTextLength} from 'utils/condition'
 
 const InsuranceView = (props: any) => {
   const {categories, conversationId} = useSelector(
     (state: RootState) => state.common
   )
-  const {category, insuranceData} = props
+  const {category, assetPath} = props
   const [frontImage, setFrontImage] = useState<string | null>(null)
   const [backImage, setBackImage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  console.log('insuranceData', insuranceData)
-  const isEditable = false
+  const insuranceData = props?.insuranceData?.[0]
+  const isEditable = !hasObjectLength(insuranceData)
   // Form fields
   const [insurancePlanName, setInsurancePlanName] = useState('')
   const [memberId, setMemberId] = useState('')
@@ -41,6 +42,34 @@ const InsuranceView = (props: any) => {
   const [endDate, setEndDate] = useState<Date | null>(null)
   const [showStartDatePicker, setShowStartDatePicker] = useState(false)
   const [showEndDatePicker, setShowEndDatePicker] = useState(false)
+  const setInitialData = (data: any) => {
+    console.log('data.member_id', data.member_id)
+    if (data.insurance_plan_name) setInsurancePlanName(data.insurance_plan_name)
+    if (data.member_id) setMemberId(`${data.member_id}`)
+    if (data.group_number) setGroupNumber(data.group_number)
+    if (data.start_date) setStartDate(new Date(data.start_date))
+    if (data.end_date) setEndDate(new Date(data.end_date))
+    if (data.insurance_card_1) {
+      setFrontImage(`${assetPath}/${data.insurance_card_1}`)
+      console.log(
+        '`${assetPath}/${data.insurance_card_1}`',
+        `${assetPath}/${data.insurance_card_1}`
+      )
+    }
+    if (data.insurance_card_2) {
+      setBackImage(`${assetPath}/${data.insurance_card_2}`)
+      console.log(
+        '`${assetPath}/${data.insurance_card_2}`',
+        `${assetPath}/${data.insurance_card_2}`
+      )
+    }
+  }
+  useEffect(() => {
+    if (insuranceData) {
+      setInitialData(insuranceData)
+    }
+    return () => {}
+  }, [insuranceData])
 
   const currentCategory = categories?.find(cat => cat.id === category)
   if (currentCategory?.category !== 'Insurance Detail') return null
@@ -198,7 +227,10 @@ const InsuranceView = (props: any) => {
   }
 
   const canSubmit =
-    frontImage && backImage && insurancePlanName.trim() && memberId.trim()
+    hasTextLength(frontImage) &&
+    hasTextLength(backImage) &&
+    hasTextLength(insurancePlanName) &&
+    hasTextLength(memberId)
 
   return (
     <View
@@ -208,45 +240,55 @@ const InsuranceView = (props: any) => {
         label="Insurance Plan Name"
         value={insurancePlanName}
         onChangeText={setInsurancePlanName}
+        editable={isEditable}
       />
       <BaseInput
         label="Member ID"
         value={memberId}
         onChangeText={setMemberId}
+        editable={isEditable}
       />
       <BaseInput
         label="Group Number (Optional)"
         value={groupNumber}
         onChangeText={setGroupNumber}
+        editable={isEditable}
       />
-      <BaseDatePicker
-        label="Start Date (Optional)"
-        value={startDate}
-        setValue={setStartDate}
-      />
+      <View style={isEditable ? {} : styles.disabledContainer}>
+        <BaseDatePicker
+          label="Start Date (Optional)"
+          value={startDate}
+          setValue={isEditable ? setStartDate : () => {}}
+        />
+      </View>
 
-      <BaseDatePicker
-        label="End Date (Optional)"
-        value={endDate}
-        setValue={setEndDate}
-      />
+      <View style={isEditable ? {} : styles.disabledContainer}>
+        <BaseDatePicker
+          label="End Date (Optional)"
+          value={endDate}
+          setValue={isEditable ? setEndDate : () => {}}
+        />
+      </View>
 
       <Text style={styles.label}>{'Insurance Card'}</Text>
       <View style={styles.imagePickersContainer}>
         <TouchableOpacity
           style={styles.squareImagePicker}
-          onPress={() => showImagePicker('front')}>
+          onPress={() => isEditable && showImagePicker('front')}
+          disabled={!isEditable}>
           {frontImage ? (
             <>
               <Image
                 source={{uri: frontImage}}
                 style={styles.squareSelectedImage}
               />
-              <TouchableOpacity
-                style={styles.removeButton}
-                onPress={() => setFrontImage(null)}>
-                <Text style={styles.removeButtonText}>✕</Text>
-              </TouchableOpacity>
+              {isEditable && (
+                <TouchableOpacity
+                  style={styles.removeButton}
+                  onPress={() => setFrontImage(null)}>
+                  <Text style={styles.removeButtonText}>✕</Text>
+                </TouchableOpacity>
+              )}
             </>
           ) : (
             <View style={styles.squarePlaceholderContainer}>
@@ -257,18 +299,21 @@ const InsuranceView = (props: any) => {
 
         <TouchableOpacity
           style={styles.squareImagePicker}
-          onPress={() => showImagePicker('back')}>
+          onPress={() => isEditable && showImagePicker('back')}
+          disabled={!isEditable}>
           {backImage ? (
             <>
               <Image
                 source={{uri: backImage}}
                 style={styles.squareSelectedImage}
               />
-              <TouchableOpacity
-                style={styles.removeButton}
-                onPress={() => setBackImage(null)}>
-                <Text style={styles.removeButtonText}>✕</Text>
-              </TouchableOpacity>
+              {isEditable && (
+                <TouchableOpacity
+                  style={styles.removeButton}
+                  onPress={() => setBackImage(null)}>
+                  <Text style={styles.removeButtonText}>✕</Text>
+                </TouchableOpacity>
+              )}
             </>
           ) : (
             <View style={styles.squarePlaceholderContainer}>
@@ -279,6 +324,7 @@ const InsuranceView = (props: any) => {
       </View>
 
       <BaseButton
+        hide={!isEditable}
         title="Save"
         onPress={submit}
         disabled={!canSubmit}
@@ -478,6 +524,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#007AFF',
     fontWeight: '600'
+  },
+  disabledContainer: {
+    opacity: 0.5,
+    pointerEvents: 'none'
   }
 })
 

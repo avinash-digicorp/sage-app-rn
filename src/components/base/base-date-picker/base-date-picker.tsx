@@ -15,6 +15,7 @@ interface BaseDatePickerProps {
   value: Date | null | undefined
   label?: string
   setValue: (date: Date) => void
+  disabled?: boolean
   placeholder?: string
   mode?: 'date' | 'time' | 'datetime'
   minimumDate?: Date
@@ -26,6 +27,7 @@ const BaseDatePicker: React.FC<BaseDatePickerProps> = ({
   value,
   label,
   setValue,
+  disabled = false,
   placeholder = 'Select date',
   mode = 'date',
   minimumDate,
@@ -57,6 +59,7 @@ const BaseDatePicker: React.FC<BaseDatePickerProps> = ({
       {label && <Text style={styles.label}>{label}</Text>}
 
       <TouchableOpacity
+        disabled={disabled}
         style={[styles.inputField, error ? styles.errorBorder : null]}
         onPress={() => setShow(true)}
         activeOpacity={0.7}>
