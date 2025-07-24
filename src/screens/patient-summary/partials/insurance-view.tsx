@@ -16,7 +16,7 @@ import {
   ImagePickerResponse,
   MediaType
 } from 'react-native-image-picker'
-import {Request} from '../../../../apiRequest'
+import {BASE_URL, Request} from '../../../../apiRequest'
 import {useSelector} from 'react-redux'
 import {RootState} from 'store'
 import {BaseButton, BaseInput} from 'components'
@@ -24,12 +24,15 @@ import BaseDatePicker from 'components/base/base-date-picker/base-date-picker'
 import colors from 'theme'
 
 const InsuranceView = (props: any) => {
-  const {categories} = useSelector((state: RootState) => state.common)
-  const {category} = props
+  const {categories, conversationId} = useSelector(
+    (state: RootState) => state.common
+  )
+  const {category, insuranceData} = props
   const [frontImage, setFrontImage] = useState<string | null>(null)
   const [backImage, setBackImage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-
+  console.log('insuranceData', insuranceData)
+  const isEditable = false
   // Form fields
   const [insurancePlanName, setInsurancePlanName] = useState('')
   const [memberId, setMemberId] = useState('')
@@ -119,78 +122,79 @@ const InsuranceView = (props: any) => {
     })
   }
 
-  const submitImages = async () => {
-    // Validate all required fields
-    if (!frontImage || !backImage) {
-      Alert.alert(
-        'Error',
-        'Please select both front and back images of your insurance'
-      )
-      return
+  const submit = async () => {
+    try {
+      if (!frontImage || !backImage) {
+        Alert.alert(
+          'Error',
+          'Please select both front and back images of your insurance'
+        )
+        return
+      }
+
+      if (!insurancePlanName.trim()) {
+        Alert.alert('Error', 'Please enter the insurance plan name')
+        return
+      }
+
+      if (!memberId.trim()) {
+        Alert.alert('Error', 'Please enter the member ID')
+        return
+      }
+
+      setIsSubmitting(true)
+
+      const formData = new FormData()
+
+      formData.append('conversation_id', conversationId)
+      // formData.append('categories', '["29"]')
+      formData.append('insurance_plan_name', insurancePlanName)
+      formData.append('member_id', memberId)
+      groupNumber && formData.append('group_number', groupNumber)
+      startDate &&
+        formData.append('start_date', startDate.toISOString().split('T')[0])
+      endDate &&
+        formData.append('end_date', endDate.toISOString().split('T')[0])
+
+      // Add front image
+      formData.append('insurance_card_1', {
+        uri: frontImage,
+        type: 'image/jpeg',
+        name: 'insurance_front.jpg'
+      } as any)
+
+      // Add back image
+      formData.append('insurance_card_2', {
+        uri: backImage,
+        type: 'image/jpeg',
+        name: 'insurance_back.jpg'
+      } as any)
+
+      const onSuccess = (response: any) => {
+        setIsSubmitting(false)
+        console.log('Upload success:', response)
+      }
+
+      const onError = (error: string) => {
+        setIsSubmitting(false)
+        console.error('Upload error:', error)
+      }
+
+      // Call the API
+      await fetch(`${BASE_URL}store-openemr`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Accept: 'application/json'
+        }
+      })
+        .then(response => response.json())
+        .then(onSuccess)
+        .catch(onError)
+    } catch (error) {
+      console.log('Submission error:', error)
     }
-
-    if (!insurancePlanName.trim()) {
-      Alert.alert('Error', 'Please enter the insurance plan name')
-      return
-    }
-
-    if (!memberId.trim()) {
-      Alert.alert('Error', 'Please enter the member ID')
-      return
-    }
-
-    if (!groupNumber.trim()) {
-      Alert.alert('Error', 'Please enter the group number')
-      return
-    }
-
-    if (!startDate) {
-      Alert.alert('Error', 'Please select the start date')
-      return
-    }
-
-    if (!endDate) {
-      Alert.alert('Error', 'Please select the end date')
-      return
-    }
-
-    setIsSubmitting(true)
-
-    const formData = new FormData()
-
-    // Add form fields
-    formData.append('insurance_plan_name', insurancePlanName)
-    formData.append('member_id', memberId)
-    formData.append('group_number', groupNumber)
-    formData.append('start_date', startDate.toISOString().split('T')[0])
-    formData.append('end_date', endDate.toISOString().split('T')[0])
-
-    // Add front image
-    formData.append('insurance_card_1', {
-      uri: frontImage,
-      type: 'image/jpeg',
-      name: 'insurance_front.jpg'
-    } as any)
-
-    // Add back image
-    formData.append('insurance_card_2', {
-      uri: backImage,
-      type: 'image/jpeg',
-      name: 'insurance_back.jpg'
-    } as any)
-
-    const onSuccess = (response: any) => {
-      setIsSubmitting(false)
-      console.log('Upload success:', response)
-    }
-
-    const onError = (error: string) => {
-      setIsSubmitting(false)
-      console.error('Upload error:', error)
-    }
-
-    // Call the API
-    Request('store-openemr', 'POST', formData, onSuccess, onError)
   }
 
   const canSubmit =
@@ -276,7 +280,7 @@ const InsuranceView = (props: any) => {
 
       <BaseButton
         title="Save"
-        onPress={submitImages}
+        onPress={submit}
         disabled={!canSubmit}
         loading={isSubmitting}
       />

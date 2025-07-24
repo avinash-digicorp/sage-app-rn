@@ -56,7 +56,11 @@ export const PatientSummary = () => {
         setAssetPath(res.data?.S3_SAGE_URL)
       }
     }
-    const params = {conversation_id: conversationId, categories: [id]}
+    const categoryIds = [id]
+    if (id === 29) {
+      categoryIds.push(1)
+    }
+    const params = {conversation_id: conversationId, categories: categoryIds}
     Request('conversation', 'POST', params, onSuccess, () => {})
   }
   const props = {

@@ -44,12 +44,14 @@ const RadiologyView = (props: any) => {
   const currentCategory = categories?.find(cat => cat.id === category)
   if (currentCategory?.category !== 'Radiology') return null
   const mainList = [
-    ...images?.map(img => ({...img, type: 'local'})),
-    ...xrays?.map((item, index) => ({
-      uri: `${assetPath}/${item}`,
-      type: 'image',
-      id: item
-    })),
+    ...(hasLength(images) ? images.map(img => ({...img, type: 'local'})) : []),
+    ...(hasLength(xrays)
+      ? xrays.map(item => ({
+          uri: `${assetPath}/${item}`,
+          type: 'image',
+          id: item
+        }))
+      : []),
     {type: 'add-button'}
   ]
 
@@ -155,7 +157,7 @@ const RadiologyView = (props: any) => {
         setUpdatingImages(true)
         Request(
           `conversation/${conversationId}/images`,
-          'POST',
+          'PUT',
           {images: xrays},
           () => setUpdatingImages(false),
           () => setUpdatingImages(false)
