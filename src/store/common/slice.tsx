@@ -3,6 +3,7 @@ import {IInitialCommonStateProps} from './types'
 
 const initialState: IInitialCommonStateProps = {
   conversationId: 'CON1751881500.379857',
+  password: '',
   initialParams: null,
   userData: null,
   categories: [],
@@ -15,6 +16,9 @@ export const commonSlice = createSlice({
   reducers: {
     setConversationId: (state, action) => {
       state.conversationId = action.payload
+    },
+    setPassword: (state, action) => {
+      state.password = action.payload
     },
     setCategories: (state, action) => {
       state.categories = action.payload
@@ -47,6 +51,7 @@ export const {
   updateInitialParams,
   setConversationId,
   setMessages,
+  setPassword,
   updateMessages
 } = commonSlice.actions
 

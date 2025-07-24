@@ -8,22 +8,70 @@ import {
   setConversationId,
   setInitialParams,
   setMessages,
+  setPassword as setPass,
   setUserData
 } from 'store/common/slice'
 import {RootState} from 'store'
 import {NurseView} from 'components/common'
 import {Header} from 'components/header'
 import LinearGradient from 'react-native-linear-gradient'
+import {hasTextLength} from 'utils/condition'
 
 const Login = () => {
   const dispatch = useDispatch()
-  const {conversationId} = useSelector((state: RootState) => state.common)
+  const {conversationId, password: pass} = useSelector(
+    (state: RootState) => state.common
+  )
   const navigation = useNavigation()
   const [patientId, setPatientId] = useState(conversationId ?? '')
-  const [password, setPassword] = useState('')
+  const [password, setPassword] = useState(pass ?? '')
+  const [patientIdError, setPatientIdError] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+
+  const handlePatientIdChange = (value: string) => {
+    setPatientId(value)
+    if (patientIdError) {
+      setPatientIdError('')
+    }
+  }
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value)
+    if (passwordError) {
+      setPasswordError('')
+    }
+  }
+
+  const validateForm = () => {
+    let isValid = true
+
+    // Reset errors
+    setPatientIdError('')
+    setPasswordError('')
+
+    // Validate patient ID
+    if (!hasTextLength(patientId) || !patientId.trim()) {
+      setPatientIdError('Patient ID is required')
+      isValid = false
+    }
+
+    // Validate password
+    if (!hasTextLength(password) || !password.trim()) {
+      setPasswordError('Password is required')
+      isValid = false
+    }
+
+    return isValid
+  }
+
   const login = () => {
+    if (!validateForm()) {
+      return
+    }
+
     if (patientId !== conversationId) {
       dispatch(setConversationId(patientId))
+      dispatch(setPass(password))
       dispatch(setUserData(null))
       dispatch(setInitialParams(null))
       dispatch(setMessages([]))
@@ -55,13 +103,15 @@ const Login = () => {
           <BaseInput
             value={patientId}
             label="Patient id"
-            onChangeText={setPatientId}
+            onChangeText={handlePatientIdChange}
+            errorText={patientIdError}
           />
           <BaseInput
             value={password}
             label="Password"
             secureTextEntry
-            onChangeText={setPassword}
+            onChangeText={handlePasswordChange}
+            errorText={passwordError}
           />
         </View>
       </KeyboardAvoidingView>

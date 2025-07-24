@@ -4,12 +4,19 @@ import Tts from 'react-native-tts'
 import {useCallback, useEffect, useRef, useState} from 'react'
 import {useDispatch, useSelector} from 'react-redux'
 import {RootState} from 'store'
-import {setInitialParams, updateMessages, setUserData} from 'store/common/slice'
+import {
+  setInitialParams,
+  updateMessages,
+  setUserData,
+  setMessages
+} from 'store/common/slice'
 import {Request} from 'utils/request'
 import Voice from '@react-native-voice/voice'
 import {getInitials} from 'utils/helper'
 import colors from 'theme'
 import {Header} from 'components/header'
+import {SCREEN_HEIGHT} from 'utils/size'
+import {replaceTo, resetNavigation, routes} from 'navigation'
 
 // Define message type for better type checking
 interface Message {
@@ -32,6 +39,25 @@ const Chat = () => {
   const [isListening, setIsListening] = useState(false)
   const [isAsking, setIsAsking] = useState(false)
   const [recognizedText, setRecognizedText] = useState('')
+
+  const scrollToLastMessage = useCallback(() => {
+    if (scrollRef.current && messages.length > 0) {
+      setTimeout(() => {
+        try {
+          scrollRef.current?.scrollToIndex({
+            index: messages.length - 1,
+            animated: true,
+            viewPosition: 0.8
+          })
+        } catch (error) {
+          setTimeout(() => {
+            scrollRef.current?.scrollToEnd({animated: true})
+          }, 50)
+        }
+      }, 150)
+    }
+  }, [messages.length])
+
   const startSpeech = async () => {
     if (_isSpeaking) return
     if (isListening) return
@@ -141,7 +167,7 @@ const Chat = () => {
         is_third_try: 0
       }
       dispatch(updateMessages({role: 'user', message: answer}))
-      scrollRef?.current?.scrollToEnd({animated: true})
+      scrollToLastMessage()
       const onSuccess = (res: any) => {
         Voice.destroy()
         setIsListening(false)
@@ -149,8 +175,17 @@ const Chat = () => {
           dispatch(setInitialParams(res.data?.next_question_data))
           dispatch(setUserData(res.data?.user_data))
           const newQuestion = res.data?.next_question_data?.question
+          if (res.data?.next_question_data?.section_conclusion_data) {
+            setTimeout(() => {
+              dispatch(setMessages([{role: 'system', message: newQuestion}]))
+            }, 2000)
+            resetNavigation(routes.WELCOME, {
+              message: res.data?.next_question_data?.section_conclusion_data
+            })
+            return
+          }
           dispatch(updateMessages({role: 'system', message: newQuestion}))
-          scrollRef?.current?.scrollToEnd({animated: true})
+          scrollToLastMessage()
 
           setIsAsking(true)
           setIsSpeaking(true)
@@ -160,7 +195,7 @@ const Chat = () => {
           dispatch(
             updateMessages({role: 'system', message: res.data?.explanation})
           )
-          scrollRef?.current?.scrollToEnd({animated: true})
+          scrollToLastMessage()
           setIsAsking(true)
           setIsSpeaking(true)
           Tts.speak(res.data?.explanation)
@@ -171,7 +206,14 @@ const Chat = () => {
         setSubmitting(false)
       })
     },
-    [initialParams, userData, conversationId]
+    [
+      initialParams,
+      userData,
+      conversationId,
+      dispatch,
+      scrollToLastMessage,
+      submitting
+    ]
   )
 
   useEffect(() => {
@@ -179,7 +221,7 @@ const Chat = () => {
   }, [submitAnswer])
 
   return (
-    <View className="flex-1 items-center bg-white">
+    <View style={styles.mainView} className="items-center bg-white">
       <BaseImage
         type="Image"
         className="h-full w-full absolute"
@@ -187,61 +229,84 @@ const Chat = () => {
         name="BG"
       />
       <Header title={initialParams.category ?? 'Patient Demographic'} />
-      <FlatList
-        ref={scrollRef}
-        data={messages}
-        style={styles.list}
-        contentContainerClassName="pb-32"
-        keyExtractor={(_, index) => `message-${index}`}
-        renderItem={({item}) => {
-          const isSystem = item?.role === 'system'
-          return (
-            <View style={styles.messageRow}>
-              {isSystem ? (
-                // System message from left
-                <View style={styles.leftMessage}>
-                  <BaseImage name="nurse" style={styles.avatar} />
-                  <View style={styles.leftBubble}>
-                    <Text style={styles.messageText}>{item.message}</Text>
+      <View style={styles.main}>
+        <FlatList
+          ref={scrollRef}
+          data={messages}
+          style={styles.list}
+          contentContainerStyle={styles.listContent}
+          keyExtractor={(_, index) => `message-${index}`}
+          getItemLayout={(data, index) => ({
+            length: 80, // Approximate item height
+            offset: 80 * index,
+            index
+          })}
+          onContentSizeChange={() => {
+            scrollToLastMessage()
+          }}
+          onScrollToIndexFailed={info => {
+            setTimeout(() => {
+              scrollRef.current?.scrollToEnd({animated: true})
+            }, 100)
+          }}
+          renderItem={({item}) => {
+            const isSystem = item?.role === 'system'
+            return (
+              <View style={styles.messageRow}>
+                {isSystem ? (
+                  <View style={styles.leftMessage}>
+                    <BaseImage name="nurse" style={styles.avatar} />
+                    <View style={styles.leftBubble}>
+                      <Text style={styles.messageText}>{item.message}</Text>
+                    </View>
                   </View>
-                </View>
-              ) : (
-                // User message from right
-                <View style={styles.rightMessage}>
-                  <View style={styles.rightBubble}>
-                    <Text style={styles.rightMessageText}>{item.message}</Text>
+                ) : (
+                  <View style={styles.rightMessage}>
+                    <View style={styles.rightBubble}>
+                      <Text style={styles.rightMessageText}>
+                        {item.message}
+                      </Text>
+                    </View>
+                    <View style={styles.userAvatar}>
+                      <Text text={initials} style={styles.initialsText} />
+                    </View>
                   </View>
-                  <View style={styles.userAvatar}>
-                    <Text text={initials} style={styles.initialsText} />
-                  </View>
-                </View>
-              )}
-            </View>
-          )
-        }}
-      />
-      <ButtonView
-        onPress={() => speechToText(2)}
-        className="rounded-full mb-2 overflow-hidden">
-        <BaseImage
-          name={isListening ? 'wave_animated' : 'wave'}
-          style={{width: 80, height: 80}}
+                )}
+              </View>
+            )
+          }}
         />
-      </ButtonView>
-      <Text text={recognizedText} className="self-center text-gray-600" />
-      <Text
-        text={!isListening ? ' ' : 'Listening...'}
-        className="self-center font-bold text-gray-600 text-lg mb-10"
-      />
+      </View>
+      <View style={styles.bottom}>
+        <ButtonView
+          onPress={() => speechToText(2)}
+          className="rounded-full mb-2 overflow-hidden">
+          <BaseImage
+            name={isListening ? 'wave_animated' : 'wave'}
+            style={{width: 80, height: 80}}
+          />
+        </ButtonView>
+        <Text text={recognizedText} className="self-center text-gray-600" />
+        <Text
+          text={!isListening ? ' ' : 'Listening...'}
+          className="self-center font-bold text-gray-600 text-lg mb-10"
+        />
+      </View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
+  main: {height: SCREEN_HEIGHT * 0.7},
+  bottom: {height: SCREEN_HEIGHT * 0.3},
+  mainView: {height: SCREEN_HEIGHT},
   list: {
-    flex: 1,
+    height: SCREEN_HEIGHT * 0.7,
     width: '100%',
-    paddingHorizontal: 16
+    paddingHorizontal: 0
+  },
+  listContent: {
+    paddingBottom: 60
   },
   messageRow: {
     width: '100%',
