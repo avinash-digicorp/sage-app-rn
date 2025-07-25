@@ -38,49 +38,61 @@ export const BaseRadio = ({label, value, setValue}: BaseRadioProps) => {
 
   const currentBoolValue = getBooleanValue(value)
 
-  const handleToggle = () => {
-    const newBoolValue = !currentBoolValue
-    const newValue = convertToOriginalType(newBoolValue)
+  const handleYesPress = () => {
+    const newValue = convertToOriginalType(true)
     setValue(newValue)
   }
 
-  const getDisplayValue = (): string => {
-    if (typeof value === 'boolean') return value ? 'True' : 'False'
-    if (typeof value === 'string') {
-      if (value.toLowerCase() === 'yes' || value.toLowerCase() === 'no') {
-        return currentBoolValue ? 'Yes' : 'No'
-      }
-      return currentBoolValue ? 'True' : 'False'
-    }
-    if (typeof value === 'number') {
-      return currentBoolValue ? '1' : '0'
-    }
-    return currentBoolValue ? 'True' : 'False'
+  const handleNoPress = () => {
+    const newValue = convertToOriginalType(false)
+    setValue(newValue)
   }
 
   return (
     <View style={styles.container}>
-      {label && <Text style={styles.label}>{label}</Text>}
-      <View style={styles.radioContainer}>
-        <TouchableOpacity
-          style={styles.radioButton}
-          onPress={handleToggle}
-          activeOpacity={0.7}>
-          <View
-            style={[
-              styles.radioCircle,
-              currentBoolValue && styles.radioCircleSelected
-            ]}>
-            {currentBoolValue && <View style={styles.radioInner} />}
-          </View>
-          <Text
-            style={[
-              styles.radioText,
-              currentBoolValue && styles.radioTextSelected
-            ]}>
-            {getDisplayValue()}
-          </Text>
-        </TouchableOpacity>
+      <View style={styles.horizontalContainer}>
+        {label && <Text style={styles.label}>{label}</Text>}
+        <View style={styles.radioContainer}>
+          <TouchableOpacity
+            style={styles.radioButton}
+            onPress={handleYesPress}
+            activeOpacity={0.7}>
+            <View
+              style={[
+                styles.radioCircle,
+                currentBoolValue && styles.radioCircleSelected
+              ]}>
+              {currentBoolValue && <View style={styles.radioInner} />}
+            </View>
+            <Text
+              style={[
+                styles.radioText,
+                currentBoolValue && styles.radioTextSelected
+              ]}>
+              Yes
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.radioButton}
+            onPress={handleNoPress}
+            activeOpacity={0.7}>
+            <View
+              style={[
+                styles.radioCircle,
+                !currentBoolValue && styles.radioCircleSelected
+              ]}>
+              {!currentBoolValue && <View style={styles.radioInner} />}
+            </View>
+            <Text
+              style={[
+                styles.radioText,
+                !currentBoolValue && styles.radioTextSelected
+              ]}>
+              No
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   )
@@ -92,11 +104,17 @@ const styles = StyleSheet.create({
   container: {
     marginVertical: 10
   },
+  horizontalContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
   label: {
     fontSize: 16,
-    marginBottom: 8,
     color: '#333',
-    fontWeight: '500'
+    fontWeight: '500',
+    flex: 1,
+    marginRight: 12
   },
   radioContainer: {
     flexDirection: 'row',
@@ -106,7 +124,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 8,
-    paddingHorizontal: 4
+    paddingHorizontal: 8,
+    marginLeft: 8
   },
   radioCircle: {
     width: 20,
@@ -116,7 +135,7 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
+    marginRight: 6,
     backgroundColor: '#fff'
   },
   radioCircleSelected: {
@@ -129,7 +148,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#007bff'
   },
   radioText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#333'
   },
   radioTextSelected: {

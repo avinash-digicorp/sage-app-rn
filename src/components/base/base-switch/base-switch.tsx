@@ -56,20 +56,6 @@ export const BaseSwitch = ({label, value, setValue}: BaseSwitchProps) => {
     setValue(newValue)
   }
 
-  const getDisplayValue = (): string => {
-    if (typeof value === 'boolean') return value ? 'True' : 'False'
-    if (typeof value === 'string') {
-      if (value.toLowerCase() === 'yes' || value.toLowerCase() === 'no') {
-        return currentBoolValue ? 'Yes' : 'No'
-      }
-      return currentBoolValue ? 'True' : 'False'
-    }
-    if (typeof value === 'number') {
-      return currentBoolValue ? '1' : '0'
-    }
-    return currentBoolValue ? 'True' : 'False'
-  }
-
   const switchTranslateX = animatedValue.interpolate({
     inputRange: [0, 1],
     outputRange: [2, 22]
@@ -82,8 +68,8 @@ export const BaseSwitch = ({label, value, setValue}: BaseSwitchProps) => {
 
   return (
     <View style={styles.container}>
-      {label && <Text style={styles.label}>{label}</Text>}
-      <View style={styles.switchContainer}>
+      <View style={styles.horizontalContainer}>
+        {label && <Text style={styles.label}>{label}</Text>}
         <TouchableOpacity
           style={styles.switchRow}
           onPress={handleToggle}
@@ -100,13 +86,6 @@ export const BaseSwitch = ({label, value, setValue}: BaseSwitchProps) => {
               ]}
             />
           </Animated.View>
-          <Text
-            style={[
-              styles.switchText,
-              currentBoolValue && styles.switchTextSelected
-            ]}>
-            {getDisplayValue()}
-          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -119,15 +98,17 @@ const styles = StyleSheet.create({
   container: {
     marginVertical: 10
   },
+  horizontalContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
   label: {
     fontSize: 16,
-    marginBottom: 8,
     color: '#333',
-    fontWeight: '500'
-  },
-  switchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center'
+    fontWeight: '500',
+    flex: 1,
+    marginRight: 12
   },
   switchRow: {
     flexDirection: 'row',
@@ -138,8 +119,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 24,
     borderRadius: 12,
-    justifyContent: 'center',
-    marginRight: 12
+    justifyContent: 'center'
   },
   switchThumb: {
     width: 20,
@@ -154,13 +134,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 2
-  },
-  switchText: {
-    fontSize: 16,
-    color: '#333'
-  },
-  switchTextSelected: {
-    color: '#007bff',
-    fontWeight: '600'
   }
 })

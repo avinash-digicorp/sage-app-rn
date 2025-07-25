@@ -16,7 +16,8 @@ import {getInitials} from 'utils/helper'
 import colors from 'theme'
 import {Header} from 'components/header'
 import {SCREEN_HEIGHT} from 'utils/size'
-import {replaceTo, resetNavigation, routes} from 'navigation'
+import {resetNavigation, routes} from 'navigation'
+import {vibrate} from 'utils/vibrate'
 
 // Define message type for better type checking
 interface Message {
@@ -93,7 +94,10 @@ const Chat = () => {
         setIsAsking(false)
       }
       if (initialParams?.next_question_id === 0) {
-        resetNavigation(routes.PATIENT_SUMMARY)
+        setTimeout(() => {
+          resetNavigation(routes.PATIENT_SUMMARY)
+          vibrate()
+        }, 3000)
         return
       }
       speechToText(3)
@@ -241,7 +245,7 @@ const Chat = () => {
           contentContainerStyle={styles.listContent}
           keyExtractor={(_, index) => `message-${index}`}
           getItemLayout={(data, index) => ({
-            length: 80, // Approximate item height
+            length: 80,
             offset: 80 * index,
             index
           })}

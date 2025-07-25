@@ -4,11 +4,6 @@ import moment = require('moment')
 import {View, Text, StyleSheet} from 'react-native'
 import {useSelector} from 'react-redux'
 import {RootState} from 'store'
-import {
-  ETHNICITY_OPTIONS,
-  GENDER_OPTIONS,
-  MARITAL_STATUS_OPTIONS
-} from 'store/common/helper'
 import colors from 'theme'
 
 interface ConversationItem {
@@ -49,7 +44,7 @@ export default ({conversation = [], changeFieldValue}: Props) => {
         const setValue = v => {
           changeFieldValue({
             ...item,
-            extracted_answer: v,
+            extracted_data: v,
             extracted_data: v
           })
         }
@@ -58,7 +53,7 @@ export default ({conversation = [], changeFieldValue}: Props) => {
             <BaseSwitch
               setValue={setValue}
               label={item.question_title}
-              value={item?.extracted_answer}
+              value={item?.extracted_data}
               key={index}
             />
           )
@@ -68,7 +63,7 @@ export default ({conversation = [], changeFieldValue}: Props) => {
             <BaseRadio
               setValue={setValue}
               label={item.question_title}
-              value={item?.extracted_answer}
+              value={item?.extracted_data}
               key={index}
             />
           )
@@ -78,7 +73,7 @@ export default ({conversation = [], changeFieldValue}: Props) => {
             <BaseInput
               onChangeText={setValue}
               label={item.question_title}
-              value={item?.extracted_answer}
+              value={item?.extracted_data}
               key={index}
             />
           )
@@ -90,16 +85,16 @@ export default ({conversation = [], changeFieldValue}: Props) => {
               onChangeText={setValue}
               style={{height: 100}}
               label={item.question_title}
-              value={item?.extracted_answer}
+              value={item?.extracted_data}
               key={index}
             />
           )
         }
         if (item.type === 'date') {
           const isValidDate =
-            item?.extracted_answer && moment(item.extracted_answer).isValid()
+            item?.extracted_data && moment(item.extracted_data).isValid()
           const dateValue = isValidDate
-            ? moment(item.extracted_answer).toDate()
+            ? moment(item.extracted_data).toDate()
             : null
           return (
             <BaseDatePicker
@@ -111,8 +106,6 @@ export default ({conversation = [], changeFieldValue}: Props) => {
           )
         }
         if (item.type === 'dropdown') {
-          console.log('item.extracted_answer', metadataList)
-
           const metaData = metadataList?.find(
             meta => meta.mapping_id === item.pk_question_id
           )
@@ -121,7 +114,7 @@ export default ({conversation = [], changeFieldValue}: Props) => {
             <BasePicker
               setValue={setValue}
               label={item.question_title}
-              value={item?.extracted_answer}
+              value={item?.extracted_data}
               key={index}
               items={items?.map(i => ({name: i, value: i}))}
             />
@@ -133,18 +126,6 @@ export default ({conversation = [], changeFieldValue}: Props) => {
   )
 }
 
-const getItemsList = (key: string) => {
-  switch (key) {
-    case 'gender':
-      return GENDER_OPTIONS
-    case 'Ethnicity/Race':
-      return ETHNICITY_OPTIONS
-    case 'Marital Status':
-      return MARITAL_STATUS_OPTIONS
-    default:
-      return []
-  }
-}
 export const ConversationItem = ({item}) => {
   if (item?.sub_category_data) {
     return (
@@ -153,9 +134,7 @@ export const ConversationItem = ({item}) => {
         {item.sub_category_data.map((subItem, subIndex) => (
           <View key={subIndex} style={styles.subItemContainer}>
             <Text style={styles.subItemTitle}>{subItem.question_title}</Text>
-            <Text style={styles.subItemAnswer}>
-              - {subItem.extracted_answer}
-            </Text>
+            <Text style={styles.subItemAnswer}>- {subItem.extracted_data}</Text>
           </View>
         ))}
       </View>
@@ -164,7 +143,7 @@ export const ConversationItem = ({item}) => {
   return (
     <View style={styles.itemContainer}>
       <Text style={styles.itemTitle}>{item.question_title}</Text>
-      <Text style={styles.itemAnswer}>{item.extracted_answer}</Text>
+      <Text style={styles.itemAnswer}>{item.extracted_data}</Text>
     </View>
   )
 }
