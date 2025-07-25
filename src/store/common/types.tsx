@@ -4,7 +4,12 @@ export interface IInitialCommonStateProps {
   initialParams: InitialParams | null
   userData: any // Assuming userData is of type any, adjust as needed
   categories?: CategoryId[] // Optional categories array
+  metadataList?: Metadata[] // Optional metadata list
   messages: MessageType[]
+}
+export interface Metadata {
+  mapping_id: string | number
+  mapping_data: string[]
 }
 
 type CategoryId = {

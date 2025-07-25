@@ -21,13 +21,11 @@ export const Header = (props: IProps) => {
   return (
     <View className="mt-14 flex-row items-center justify-between">
       {showLines && <View style={styles.line} />}
-      {showEdit && !showBack && <View className="w-10" />}
+      {showEdit && !showBack && <View className="flex-1" />}
       {showBack && (
-        <AssetSvg
-          style={{marginLeft: -20}}
-          name="back"
-          buttonViewProps={{onPress: goBack}}
-        />
+        <View className="flex-row flex-1 pl-6">
+          <AssetSvg name="back" buttonViewProps={{onPress: goBack}} />
+        </View>
       )}
       <BaseButton
         scale={1}
@@ -37,14 +35,11 @@ export const Header = (props: IProps) => {
         titleStyle={{fontSize: 14, paddingHorizontal: 0}}
       />
       {showLines && <View style={styles.line} />}
-      {showEdit && !showEdit && <View className="w-10" />}
+      {!showEdit && showBack && <View className="flex-1" />}
       {showEdit && (
-        <AssetSvg
-          style={{marginLeft: 10}}
-          buttonViewProps={{onPress: onPressEdit}}
-          name="edit"
-          className="mr-5"
-        />
+        <View className="flex-row flex-1 justify-end pr-6">
+          <AssetSvg buttonViewProps={{onPress: onPressEdit}} name="edit" />
+        </View>
       )}
     </View>
   )

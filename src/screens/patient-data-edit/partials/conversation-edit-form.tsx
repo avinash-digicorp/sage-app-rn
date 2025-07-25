@@ -1,6 +1,9 @@
 import {BaseInput, BasePicker, BaseRadio, BaseSwitch} from 'components'
 import BaseDatePicker from 'components/base/base-date-picker/base-date-picker'
+import moment = require('moment')
 import {View, Text, StyleSheet} from 'react-native'
+import {useSelector} from 'react-redux'
+import {RootState} from 'store'
 import {
   ETHNICITY_OPTIONS,
   GENDER_OPTIONS,
@@ -29,6 +32,8 @@ interface Props {
 }
 
 export default ({conversation = [], changeFieldValue}: Props) => {
+  const {metadataList} = useSelector((state: RootState) => state.common)
+
   if (!conversation.length) return
   const uniqueConversation = conversation.filter((item, index, array) => {
     const lastIndex = array
@@ -91,25 +96,31 @@ export default ({conversation = [], changeFieldValue}: Props) => {
           )
         }
         if (item.type === 'date') {
+          console.log('item?.question_title', item?.extracted_answer)
+
           return (
             <BaseDatePicker
               setValue={setValue}
               label={item.question_title}
-              value={item?.extracted_answer}
+              value={moment(item?.extracted_answer ?? null).toDate()}
               key={index}
             />
           )
         }
         if (item.type === 'dropdown') {
-          const items = getItemsList(item.question_title)
+          console.log('item.extracted_answer', metadataList)
+
+          const metaData = metadataList?.find(
+            meta => meta.mapping_id === item.pk_question_id
+          )
+          const items = metaData?.mapping_data ?? []
           return (
             <BasePicker
               setValue={setValue}
               label={item.question_title}
               value={item?.extracted_answer}
               key={index}
-              // setValue={setCarVariant}
-              items={GENDER_OPTIONS}
+              items={items?.map(i => ({name: i, value: i}))}
             />
           )
         }

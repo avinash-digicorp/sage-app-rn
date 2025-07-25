@@ -71,7 +71,8 @@ const styles = StyleSheet.create({
     width: '100%'
   },
   itemContainer: {
-    paddingVertical: 5,
+    paddingTop: 5,
+    paddingBottom: 8,
     paddingHorizontal: 10,
     borderWidth: 1,
     borderBottomWidth: 1,

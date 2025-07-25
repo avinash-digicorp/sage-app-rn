@@ -36,7 +36,6 @@ export const TabMenu = ({tabs, setValue, value}: any) => {
               </Text>
               {isSelected && (
                 <Animated.View
-                  sharedTransitionTag="tab_view"
                   layout={CurvedTransition}
                   entering={ZoomIn}
                   exiting={ZoomOut}

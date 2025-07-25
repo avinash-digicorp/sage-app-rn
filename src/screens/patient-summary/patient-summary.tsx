@@ -7,7 +7,7 @@ import {useEffect, useState} from 'react'
 import {Request} from 'utils/request'
 import {useDispatch, useSelector} from 'react-redux'
 import {RootState} from 'store'
-import {setCategories} from 'store/common/slice'
+import {setCategories, setMetadataList} from 'store/common/slice'
 import {Categories} from './partials/categories'
 import {Header} from 'components/header'
 import {useIsFocused, useNavigation} from '@react-navigation/native'
@@ -29,6 +29,9 @@ export const PatientSummary = () => {
       if (res.data?.categoryList) {
         dispatch(setCategories(res.data?.categoryList || []))
         setCategory(res.data?.categoryList[0]?.id)
+      }
+      if (res.data?.metadataList) {
+        dispatch(setMetadataList(res.data?.metadataList || []))
       }
     }
     Request('metadata', 'GET', {}, onSuccess, () => {})

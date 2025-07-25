@@ -7,6 +7,7 @@ const initialState: IInitialCommonStateProps = {
   initialParams: null,
   userData: null,
   categories: [],
+  metadataList: [],
   messages: []
 }
 
@@ -22,6 +23,9 @@ export const commonSlice = createSlice({
     },
     setCategories: (state, action) => {
       state.categories = action.payload
+    },
+    setMetadataList: (state, action) => {
+      state.metadataList = action.payload
     },
     setUserData: (state, action) => {
       state.userData = action.payload
@@ -52,7 +56,8 @@ export const {
   setConversationId,
   setMessages,
   setPassword,
-  updateMessages
+  updateMessages,
+  setMetadataList
 } = commonSlice.actions
 
 export default commonSlice.reducer
