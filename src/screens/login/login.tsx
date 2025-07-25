@@ -1,7 +1,7 @@
 import {KeyboardAvoidingView, StyleSheet, View} from 'react-native'
 import {AssetSvg, BaseImage, BaseInput, ButtonView, Text} from 'components'
 import {useNavigation} from '@react-navigation/native'
-import {routes} from 'navigation'
+import {resetNavigation, routes} from 'navigation'
 import {useState} from 'react'
 import {useDispatch, useSelector} from 'react-redux'
 import {
@@ -15,13 +15,15 @@ import {RootState} from 'store'
 import {NurseView} from 'components/common'
 import {Header} from 'components/header'
 import LinearGradient from 'react-native-linear-gradient'
-import {hasTextLength} from 'utils/condition'
+import {hasObjectLength, hasTextLength} from 'utils/condition'
 
 const Login = () => {
   const dispatch = useDispatch()
-  const {conversationId, password: pass} = useSelector(
-    (state: RootState) => state.common
-  )
+  const {
+    conversationId,
+    lastInitialParams,
+    password: pass
+  } = useSelector((state: RootState) => state.common)
   const navigation = useNavigation()
   const [patientId, setPatientId] = useState(conversationId ?? '')
   const [password, setPassword] = useState(pass ?? '')
@@ -76,8 +78,13 @@ const Login = () => {
       dispatch(setInitialParams(null))
       dispatch(setMessages([]))
     } else {
+      if (hasObjectLength(lastInitialParams)) {
+        setInitialParams(lastInitialParams)
+        resetNavigation(routes.CHAT)
+        return
+      }
     }
-    navigation.navigate(routes.PATIENT_SUMMARY)
+    navigation.navigate(routes.WELCOME)
   }
   return (
     <View className="flex-1 items-center bg-white">

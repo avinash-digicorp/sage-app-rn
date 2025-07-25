@@ -1,13 +1,18 @@
 import {View, Text as RNText} from 'react-native'
 import {BaseImage, ButtonView, Header, Text} from 'components'
-import {useNavigation, useRoute} from '@react-navigation/native'
-import {routes} from 'navigation'
+import {useRoute} from '@react-navigation/native'
+import {resetNavigation, routes} from 'navigation'
 import {NurseView} from 'components/common'
 import Tts from 'react-native-tts'
 import {useEffect, useState} from 'react'
 import {useDispatch, useSelector} from 'react-redux'
 import {RootState} from 'store'
-import {setInitialParams, setMessages, setUserData} from 'store/common/slice'
+import {
+  setInitialParams,
+  setLastInitialParams,
+  setMessages,
+  setUserData
+} from 'store/common/slice'
 import {Request} from 'utils/request'
 interface Message {
   role: 'user' | 'system'
@@ -62,10 +67,10 @@ const Welcome = () => {
     Request('questions', 'GET', {}, onSuccess, () => {})
   }
 
-  const navigation = useNavigation()
   const start = () => {
     Tts.stop()
-    navigation.navigate(routes.CHAT)
+    dispatch(setLastInitialParams(null))
+    resetNavigation(routes.CHAT)
   }
 
   // Function to render text with blue brackets

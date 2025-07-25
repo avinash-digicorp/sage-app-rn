@@ -1,5 +1,5 @@
 import {Alert, FlatList, StyleSheet, View} from 'react-native'
-import {BaseImage, ButtonView, Text} from 'components'
+import {AssetSvg, BaseImage, ButtonView, Text} from 'components'
 import Tts from 'react-native-tts'
 import {useCallback, useEffect, useRef, useState} from 'react'
 import {useDispatch, useSelector} from 'react-redux'
@@ -8,16 +8,18 @@ import {
   setInitialParams,
   updateMessages,
   setUserData,
-  setMessages
+  setMessages,
+  setLastInitialParams
 } from 'store/common/slice'
 import {Request} from 'utils/request'
 import Voice from '@react-native-voice/voice'
 import {getInitials} from 'utils/helper'
 import colors from 'theme'
 import {Header} from 'components/header'
-import {SCREEN_HEIGHT} from 'utils/size'
+import {SCREEN_HEIGHT, SCREEN_WIDTH} from 'utils/size'
 import {resetNavigation, routes} from 'navigation'
 import {vibrate} from 'utils/vibrate'
+import {hasObjectLength} from 'utils/condition'
 
 // Define message type for better type checking
 interface Message {
@@ -31,9 +33,8 @@ const Chat = () => {
   const retryCountRef = useRef<number>(0) // Track consecutive retries
 
   const dispatch = useDispatch()
-  const {messages, userData, conversationId, initialParams} = useSelector(
-    (state: RootState) => state.common
-  )
+  const {messages, lastInitialParams, userData, conversationId, initialParams} =
+    useSelector((state: RootState) => state.common)
   const initials = getInitials(conversationId)
   const [_isSpeaking, setIsSpeaking] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -148,6 +149,12 @@ const Chat = () => {
   }, [])
 
   useEffect(() => {
+    if (hasObjectLength(lastInitialParams)) {
+      setIsAsking(true)
+      setIsSpeaking(true)
+      Tts.speak(lastInitialParams?.question)
+      return
+    }
     if (messages[0]) {
       setIsAsking(true)
       setIsSpeaking(true)
@@ -228,6 +235,12 @@ const Chat = () => {
     submitAnswerRef.current = submitAnswer
   }, [submitAnswer])
 
+  const save = () => {
+    dispatch(setLastInitialParams(initialParams))
+  }
+  const discard = () => {
+    resetNavigation(routes.WELCOME)
+  }
   return (
     <View style={styles.mainView} className="items-center bg-white">
       <BaseImage
@@ -286,20 +299,36 @@ const Chat = () => {
         />
       </View>
       <View style={styles.bottom}>
-        <ButtonView
-          onPress={() => speechToText(2)}
-          className="rounded-full mb-2 overflow-hidden">
-          <BaseImage
-            name={isListening ? 'wave_animated' : 'wave'}
-            style={{width: 80, height: 80}}
-          />
-        </ButtonView>
-        <Text text={recognizedText} className="self-center text-gray-600" />
         <Text
-          text={!isListening ? ' ' : 'Listening...'}
-          className="self-center font-bold text-gray-600 text-lg mb-10"
+          text={
+            !isListening
+              ? recognizedText
+                ? recognizedText
+                : ' '
+              : 'Listening...'
+          }
+          className="z-50 self-center font-bold text-gray-600 text-lg absolute bottom-32"
         />
       </View>
+      <View
+        style={{width: SCREEN_WIDTH, height: 140}}
+        className="bottom-1 absolute">
+        <BaseImage
+          style={{width: SCREEN_WIDTH, height: 140}}
+          resizeMode="stretch"
+          type="Image"
+          name="bottom_tab"
+        />
+        <View className="w-9/12 self-center flex-row justify-between items-center absolute z-20 bottom-10 px-4">
+          <AssetSvg name="save" buttonViewProps={{onPress: save}} />
+          <AssetSvg name="cross" buttonViewProps={{onPress: discard}} />
+        </View>
+      </View>
+      <ButtonView
+        onPress={() => speechToText(2)}
+        className="z-50 rounded-full mb-2 overflow-hidden absolute bottom-44 self-center">
+        <BaseImage name={'wave_animated'} style={{width: 80, height: 80}} />
+      </ButtonView>
     </View>
   )
 }

@@ -7,6 +7,7 @@ const initialState: IInitialCommonStateProps = {
   initialParams: null,
   userData: null,
   categories: [],
+  lastInitialParams: null,
   metadataList: [],
   messages: []
 }
@@ -17,6 +18,9 @@ export const commonSlice = createSlice({
   reducers: {
     setConversationId: (state, action) => {
       state.conversationId = action.payload
+    },
+    setLastInitialParams: (state, action) => {
+      state.lastInitialParams = action.payload
     },
     setPassword: (state, action) => {
       state.password = action.payload
@@ -51,6 +55,7 @@ export const commonSlice = createSlice({
 export const {
   setCategories,
   setUserData,
+  setLastInitialParams,
   setInitialParams,
   updateInitialParams,
   setConversationId,

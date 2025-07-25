@@ -6,6 +6,7 @@ export interface IInitialCommonStateProps {
   categories?: CategoryId[] // Optional categories array
   metadataList?: Metadata[] // Optional metadata list
   messages: MessageType[]
+  lastInitialParams: any
 }
 export interface Metadata {
   mapping_id: string | number
