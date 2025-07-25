@@ -36,10 +36,10 @@ export default ({conversation = [], changeFieldValue}: Props) => {
 
   if (!conversation.length) return
   const uniqueConversation = conversation.filter((item, index, array) => {
-    const lastIndex = array
+    const firstIndex = array
       .map(obj => obj.question_title)
-      .lastIndexOf(item.question_title)
-    return index === lastIndex
+      .indexOf(item.question_title)
+    return index === firstIndex
   })
   return (
     <View
@@ -96,13 +96,16 @@ export default ({conversation = [], changeFieldValue}: Props) => {
           )
         }
         if (item.type === 'date') {
-          console.log('item?.question_title', item?.extracted_answer)
-
+          const isValidDate =
+            item?.extracted_answer && moment(item.extracted_answer).isValid()
+          const dateValue = isValidDate
+            ? moment(item.extracted_answer).toDate()
+            : null
           return (
             <BaseDatePicker
               setValue={setValue}
               label={item.question_title}
-              value={moment(item?.extracted_answer ?? null).toDate()}
+              value={dateValue}
               key={index}
             />
           )
