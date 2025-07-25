@@ -77,6 +77,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     marginBottom: 10,
     borderRadius: 8,
+    gap: 5,
     borderColor: '#ccc'
   },
   itemTitle: {

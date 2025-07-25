@@ -5,7 +5,7 @@ import {
   Text,
   StyleSheet
 } from 'react-native'
-import ConversationDataView from './partials/patient-summary-view'
+import ConversationEditForm from './partials/conversation-edit-form'
 import {BaseImage} from 'components'
 import {useEffect, useState, useCallback} from 'react'
 import {useSelector} from 'react-redux'
@@ -117,7 +117,7 @@ export const PatientDataEdit = () => {
         style={{width: '100%', flex: 1, height: '100%'}}
         behavior="padding">
         <ScrollView style={{width: '100%'}} contentContainerClassName="pb-20">
-          <ConversationDataView {...props} />
+          <ConversationEditForm {...props} />
         </ScrollView>
       </KeyboardAvoidingView>
       {hasObjectLength(data) && (
