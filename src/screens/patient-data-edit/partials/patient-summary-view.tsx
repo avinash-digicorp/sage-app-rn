@@ -1,4 +1,4 @@
-import {BaseInput, BasePicker} from 'components'
+import {BaseInput, BasePicker, BaseRadio, BaseSwitch} from 'components'
 import BaseDatePicker from 'components/base/base-date-picker/base-date-picker'
 import {View, Text, StyleSheet} from 'react-native'
 import {
@@ -8,7 +8,27 @@ import {
 } from 'store/common/helper'
 import colors from 'theme'
 
-export default ({conversation = []}) => {
+interface ConversationItem {
+  pk_question_id: string
+  question_title: string
+  type: string
+  extracted_answer: any
+  extracted_data: any
+  sub_category?: string
+  category: string
+  question_validation: string
+  is_required: number
+  edit_disabled?: number
+  pk_user_conversation_id?: number
+  sub_category_data?: any[]
+}
+
+interface Props {
+  conversation: ConversationItem[]
+  changeFieldValue: (item: ConversationItem) => void
+}
+
+export default ({conversation = [], changeFieldValue}: Props) => {
   if (!conversation.length) return
   const uniqueConversation = conversation.filter((item, index, array) => {
     const lastIndex = array
@@ -21,9 +41,37 @@ export default ({conversation = []}) => {
       style={styles.container}
       className="flex-1 p-4 bg-white rounded-md mt-2 mb-12 mx-3">
       {uniqueConversation.map((item, index) => {
+        const setValue = v => {
+          changeFieldValue({
+            ...item,
+            extracted_answer: v,
+            extracted_data: v
+          })
+        }
+        if (item.type === 'switch_type') {
+          return (
+            <BaseSwitch
+              setValue={setValue}
+              label={item.question_title}
+              value={item?.extracted_answer}
+              key={index}
+            />
+          )
+        }
+        if (item.type === 'radio') {
+          return (
+            <BaseRadio
+              setValue={setValue}
+              label={item.question_title}
+              value={item?.extracted_answer}
+              key={index}
+            />
+          )
+        }
         if (item.type === 'textfield') {
           return (
             <BaseInput
+              onChangeText={setValue}
               label={item.question_title}
               value={item?.extracted_answer}
               key={index}
@@ -34,6 +82,7 @@ export default ({conversation = []}) => {
           return (
             <BaseInput
               multiline
+              onChangeText={setValue}
               style={{height: 100}}
               label={item.question_title}
               value={item?.extracted_answer}
@@ -44,6 +93,7 @@ export default ({conversation = []}) => {
         if (item.type === 'date') {
           return (
             <BaseDatePicker
+              setValue={setValue}
               label={item.question_title}
               value={item?.extracted_answer}
               key={index}
@@ -54,6 +104,7 @@ export default ({conversation = []}) => {
           const items = getItemsList(item.question_title)
           return (
             <BasePicker
+              setValue={setValue}
               label={item.question_title}
               value={item?.extracted_answer}
               key={index}

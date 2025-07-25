@@ -10,7 +10,7 @@ import {RootState} from 'store'
 import {setCategories} from 'store/common/slice'
 import {Categories} from './partials/categories'
 import {Header} from 'components/header'
-import {useNavigation} from '@react-navigation/native'
+import {useIsFocused, useNavigation} from '@react-navigation/native'
 import {routes} from 'navigation'
 
 export const PatientSummary = () => {
@@ -33,11 +33,14 @@ export const PatientSummary = () => {
     }
     Request('metadata', 'GET', {}, onSuccess, () => {})
   }
+  const isFocused = useIsFocused()
   useEffect(() => {
+    if (!category) return
     if (!conversationId) return
+    if (!isFocused) return
     fetchConversation(category)
     return () => {}
-  }, [category])
+  }, [category, isFocused])
   useEffect(() => {
     fetchCategories()
   }, [])

@@ -7,7 +7,7 @@ import {
 } from 'react-native'
 import ConversationDataView from './partials/patient-summary-view'
 import {BaseImage} from 'components'
-import {useEffect, useState} from 'react'
+import {useEffect, useState, useCallback} from 'react'
 import {useSelector} from 'react-redux'
 import {RootState} from 'store'
 import {Header} from 'components/header'
@@ -15,46 +15,72 @@ import {useRoute} from '@react-navigation/native'
 import colors from 'theme'
 import {hasObjectLength} from 'utils/condition'
 import {Request} from 'utils/request'
+import {SCREEN_WIDTH} from 'utils/size'
+import {vibrate} from 'utils/vibrate'
+import {goBack} from 'navigation'
+
+interface ConversationItem {
+  pk_question_id: string
+  question_title: string
+  type: string
+  extracted_answer: any
+  extracted_data: any
+  sub_category?: string
+  category: string
+  question_validation: string
+  is_required: number
+  edit_disabled?: number
+  pk_user_conversation_id?: number
+}
+
+interface RouteParams {
+  category?: string
+  title?: string
+}
 
 export const PatientDataEdit = () => {
-  const params = useRoute().params
+  const params = useRoute().params as RouteParams
   const {conversationId} = useSelector((state: RootState) => state.common)
-  const [category, setCategory] = useState(0)
-  const conversation = params?.conversation ?? {}
-  const [data, setData] = useState({})
+  const [data, setData] = useState<ConversationItem[]>([])
 
-  const setValue = (pk_question_id: string, value: any) => {
-    setData(prevData => ({
-      ...prevData,
-      [pk_question_id]: value
-    }))
-  }
-  const fetchInitialData = () => {
-    const onSuccess = res => {
-      console.log('res.data?.conversation', res)
-
-      // setConversation([...res.data?.conversation])
+  const fetchInitialData = useCallback(() => {
+    const onSuccess = (res: any) => {
+      const conversationData: ConversationItem[] = res.data?.conversation || []
+      setData([...conversationData]) // Set data immediately when we get the response
     }
-    const categoryIds = [category]
-    const data = {
+    const requestData = {
       conversation_id: conversationId,
       is_edit_view: true,
       categories: [params?.category]
     }
-    Request('conversation', 'POST', data, onSuccess, () => {})
+    Request('conversation', 'POST', requestData, onSuccess, () => {})
+  }, [conversationId, params?.category])
+
+  const changeFieldValue = (item: ConversationItem) => {
+    setData(prevData => {
+      if (!Array.isArray(prevData)) {
+        console.warn('prevData is not an array:', prevData)
+        return prevData
+      }
+
+      return prevData.map(dataItem => {
+        if (dataItem.pk_question_id === item.pk_question_id) {
+          return {...dataItem, ...item}
+        }
+        return dataItem
+      })
+    })
   }
   useEffect(() => {
     fetchInitialData()
-    const initialData = conversation ?? {}
-    setData(initialData)
-
     return () => {}
-  }, [])
+  }, [fetchInitialData])
 
   const handleSubmit = () => {
     const onSuccess = (res: any) => {
       console.log('Data submitted successfully:', res)
-      // Handle success (e.g., show toast, navigate back, etc.)
+      vibrate()
+      goBack()
     }
     const onError = (err: any) => {
       console.error('Error submitting data:', err)
@@ -63,32 +89,15 @@ export const PatientDataEdit = () => {
 
     const submitParams = {
       conversation_id: conversationId,
-      preview_data: [
-        {
-          pk_question_id: 3,
-          edit_disabled: 0,
-          pk_user_conversation_id: 10143,
-          question_title: 'Last Name',
-          type: 'textfield',
-          extracted_answer: 'Smith',
-          extracted_data: 'Smith',
-          sub_category: null,
-          category: 'Patient Demographic',
-          question_validation: '',
-          is_required: 0
-        }
-      ]
+      preview_data: data
     }
 
     Request('editConversation', 'POST', submitParams, onSuccess, onError)
   }
 
   const props = {
-    category,
-    setCategory,
-    conversation,
-    data,
-    setValue
+    conversation: data, // Pass data as conversation since that's what the component expects
+    changeFieldValue
   }
   return (
     <View className="flex-1 items-center justify-around bg-white">
@@ -109,19 +118,26 @@ export const PatientDataEdit = () => {
         behavior="padding">
         <ScrollView style={{width: '100%'}} contentContainerClassName="pb-20">
           <ConversationDataView {...props} />
-          {hasObjectLength(data) && (
-            <View className="w-full bottom-1 absolute">
-              <BaseImage type="Image" className="w-full " name="bottom_tab" />
-              <Text
-                onPress={handleSubmit}
-                style={{color: colors.primary}}
-                className="absolute z-20 self-center text-lg bottom-3 font-semibold">
-                Submit
-              </Text>
-            </View>
-          )}
         </ScrollView>
       </KeyboardAvoidingView>
+      {hasObjectLength(data) && (
+        <View
+          style={{width: SCREEN_WIDTH, height: 160}}
+          className="bottom-1 absolute">
+          <BaseImage
+            style={{width: SCREEN_WIDTH, height: 160}}
+            resizeMode="stretch"
+            type="Image"
+            name="bottom_tab"
+          />
+          <Text
+            onPress={handleSubmit}
+            style={{color: colors.primary}}
+            className="absolute z-20 self-center text-lg bottom-5 font-semibold">
+            Submit
+          </Text>
+        </View>
+      )}
     </View>
   )
 }
